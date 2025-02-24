@@ -1,0 +1,4 @@
+pygame
+numpy
+stable_baselines3
+wandb
