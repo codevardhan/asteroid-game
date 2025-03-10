@@ -1,4 +1,6 @@
+import numpy as np
 from circleshape import *
+from powerups import *
 from constants import ASTEROID_KINDS, ASTEROID_MAX_RADIUS, ASTEROID_MIN_RADIUS, ASTEROID_SPAWN_RATE
 import random
 import pygame
@@ -40,7 +42,7 @@ class Asteroid(CircleShape):
         self.kill()
         if self.radius <= ASTEROID_MIN_RADIUS:
             return
-        
+        gamma = 0.4
         #spawning asteroids
         random_degrees = random.uniform(20, 50)
         vector1 = pygame.math.Vector2.rotate(self.velocity, random_degrees)
@@ -50,7 +52,11 @@ class Asteroid(CircleShape):
         
         asteroid1 = Asteroid(self.position.x, self.position.y, new_radius)
         asteroid2 = Asteroid(self.position.x, self.position.y, new_radius)
-
+        if random.random() < 0.4:
+            if random.random() < 0.2:
+                powerup = ShotPowerUp(self.position.x,self.position.y,5)
+            else:
+                powerup = SpeedPowerUp(self.position.x,self.position.y,20)
         asteroid1.velocity = vector1 * 1.5 
         asteroid2.velocity = vector2 * 1.5
 
