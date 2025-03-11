@@ -85,6 +85,7 @@ def main():
         # check for player collison or shot collision with a powerup
         for powerup in powerups:
             if powerup.collision_check(player):
+                powerup.apply_effect(player)
                 powerup.remove()
 
         font.render_to(screen, (10,10), f"Score: {score}", (255,255,255))
