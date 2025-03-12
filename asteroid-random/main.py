@@ -32,7 +32,7 @@ def main():
     dt = 0
     game_over = False
     score = 0
-
+    lives = 1
     #instances
     #rendering player and asteroids
     Player.containers = (updatables, drawables)
@@ -54,6 +54,7 @@ def main():
                     asteroids.empty()
                     shots.empty()
                     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+                    lives = player.player_lives
                     asteroid_field = AsteroidField()
             
             
@@ -71,7 +72,12 @@ def main():
         for asteroid in asteroids:
             if asteroid.collision_check(player):
                 # print("GAME OVER")
-                game_over = True
+                player.player_lives -= 1
+                player.position.x = SCREEN_WIDTH / 2
+                player.position.y = SCREEN_HEIGHT / 2
+                lives = player.player_lives
+                if lives == 0:
+                    game_over = True
                 break
                 # return
         
@@ -86,10 +92,11 @@ def main():
         for powerup in powerups:
             if powerup.collision_check(player):
                 powerup.apply_effect(player)
+                lives = player.player_lives
                 powerup.remove()
 
         font.render_to(screen, (10,10), f"Score: {score}", (255,255,255))
-        
+        font.render_to(screen, (180,10),f"Lives: {lives}",(255,255,255))
         if game_over:
             font.render_to(screen, (SCREEN_WIDTH //2 -100, SCREEN_HEIGHT // 2), "GAME OVER", (255,255,255))
             font.render_to(screen, (SCREEN_WIDTH //2 -140, SCREEN_HEIGHT //2 +50),"Press R to restart", (255,255,255))

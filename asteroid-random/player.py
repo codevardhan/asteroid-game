@@ -12,6 +12,7 @@ class Player(CircleShape):
         self.player_speed = PLAYER_SPEED
         self.player_shoot_speed = PLAYER_SHOOT_SPEED
         self.player_turn_speed = PLAYER_TURN_SPEED
+        self.player_lives = PLAYER_LIVES
     #player will look like triangle
     #hitbox logic - circle will be used
     def triangle(self):

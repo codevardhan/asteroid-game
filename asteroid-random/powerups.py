@@ -2,7 +2,7 @@ import pygame
 from circleshape import *
 NEON_GREEN = (57, 255, 20)
 NEON_PINK = (255,20,147)
-
+NEON_RED = (255, 30, 30)
 class PowerUp(CircleShape):
     def __init__(self, x, y, radius,type):
         super().__init__(x,y,radius)
@@ -34,7 +34,36 @@ class PowerUp(CircleShape):
                 player.player_shoot_speed += 100
                 player.player_shoot_cooldown -= 0.05
                 return
-            
+            case 'life_power_up':
+                player.player_lives += 1
+                return
+class LifePowerUp(PowerUp):
+    def __init__(self, x, y, radius):
+        super().__init__(x,y,radius,"life_power_up")
+        self.size = radius * 10
+    def draw(self,screen):
+        line_weight = self.size // 5
+        points = [
+            (self.position.x - line_weight, self.position.y - self.size // 2),
+            (self.position.x + line_weight, self.position.y - self.size // 2),
+            (self.position.x  + line_weight, self.position.y - line_weight),
+            (self.position.x  + self.size // 2, self.position.y - line_weight),  
+            (self.position.x  + self.size // 2, self.position.y + line_weight),  
+            (self.position.x  + line_weight, self.position.y + line_weight),  
+            (self.position.x  + line_weight, self.position.y + self.size // 2),  
+            (self.position.x  - line_weight, self.position.y + self.size // 2),  
+            (self.position.x  - line_weight, self.position.y + line_weight),  
+            (self.position.x  - self.size // 2, self.position.y + line_weight), 
+            (self.position.x  - self.size // 2, self.position.y - line_weight),  
+            (self.position.x  - line_weight, self.position.y - line_weight)
+        ]
+        pygame.draw.polygon(screen,NEON_RED,points)
+    def collision_check(self, other):
+        line_weight = self.size // 5
+        vertical_rect = pygame.Rect(self.position.x - line_weight, self.position.y - self.size // 2, 2 * line_weight, self.size)
+        horizontal_rect = pygame.Rect(self.position.x - self.size // 2, self.position.y - line_weight, self.size, 2 * line_weight)
+        return vertical_rect.collidepoint(other.position.x,other.position.y) or horizontal_rect.collidepoint(other.position.x,other.position.y)
+    
 class SpeedPowerUp(PowerUp):
 
     #initializs powerup sprite

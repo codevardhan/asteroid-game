@@ -53,10 +53,12 @@ class Asteroid(CircleShape):
         asteroid1 = Asteroid(self.position.x, self.position.y, new_radius)
         asteroid2 = Asteroid(self.position.x, self.position.y, new_radius)
         if random.random() < 0.4:
-            if random.random() < 0.2:
-                powerup = ShotPowerUp(self.position.x,self.position.y,1)
-            else:
+            if random.random() < 0.4:
+                powerup = ShotPowerUp(self.position.x,self.position.y,2)
+            elif random.random() < 0.6:
                 powerup = SpeedPowerUp(self.position.x,self.position.y,20)
+            else:
+                powerup = LifePowerUp(self.position.x,self.position.y,5)
         asteroid1.velocity = vector1 * 1.5 
         asteroid2.velocity = vector2 * 1.5
 
