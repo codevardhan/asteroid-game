@@ -1,3 +1,4 @@
+import json
 import pygame
 import pygame.freetype
 from constants import *
@@ -6,6 +7,25 @@ from asteroid import Asteroid
 from asteroidfield import *
 from shot import Shot
 from powerups import PowerUp
+player_data = []
+def collect_player_data(player,shots,score):
+    state = {
+        "player_x":player.position.x,
+        "player_y":player.position.y,
+        "player_speed":player.player_speed,
+        "player_lives":player.player_lives,
+        "player_score":score,
+        "player_turn_speed":player.player_turn_speed,
+        "num_shots": len(shots),
+        "num_speed_power_up":player.player_powerups['speed_power_up'],
+        "num_shot_power_up":player.player_powerups['shot_power_up'],
+        "num_life_power_up":player.player_powerups['life_power_up']
+    }
+    player_data.append(state)
+
+def save_data():
+    with open("training_data.json", "w") as f:
+        json.dump(player_data, f, indent=4)
 
 def main():
     #initialzing  game and screen
@@ -97,10 +117,12 @@ def main():
 
         font.render_to(screen, (10,10), f"Score: {score}", (255,255,255))
         font.render_to(screen, (180,10),f"Lives: {lives}",(255,255,255))
+        collect_player_data(player,shots,score)
         if game_over:
             font.render_to(screen, (SCREEN_WIDTH //2 -100, SCREEN_HEIGHT // 2), "GAME OVER", (255,255,255))
             font.render_to(screen, (SCREEN_WIDTH //2 -140, SCREEN_HEIGHT //2 +50),"Press R to restart", (255,255,255))
             player.kill()
+            save_data()
 
         pygame.display.flip()
             

@@ -27,14 +27,17 @@ class PowerUp(CircleShape):
     def apply_effect(self,player):
         match(self.type):
             case 'speed_power_up':
+                player.player_powerups['speed_power_up']+=1
                 player.player_turn_speed += 100
                 player.player_speed += 50
                 return
             case 'shot_power_up':
+                player.player_powerups['shot_power_up']+=1
                 player.player_shoot_speed += 100
                 player.player_shoot_cooldown -= 0.05
                 return
             case 'life_power_up':
+                player.player_powerups['life_power_up']+=1
                 player.player_lives += 1
                 return
 class LifePowerUp(PowerUp):
