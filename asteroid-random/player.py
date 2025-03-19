@@ -15,6 +15,7 @@ class Player(CircleShape):
         self.player_turn_speed = PLAYER_TURN_SPEED
         self.player_lives = PLAYER_LIVES
         self.player_powerups = {"speed_power_up":0,"shot_power_up":0,"life_power_up":0}
+        self.active_effects = []
     #player will look like triangle
     #hitbox logic - circle will be used
     def triangle(self):
@@ -30,6 +31,26 @@ class Player(CircleShape):
 
     def rotate(self, dt):
         self.rotation += self.player_turn_speed * dt
+
+    def update_effects(self):
+        current_time = pygame.time.get_ticks()
+        expired_powerups = []
+        for powerup,expiration in self.active_effects:
+            if current_time >= expiration:
+                expired_powerups.append(powerup)
+                self.active_effects.remove((powerup,expiration))
+                
+        for powerup in expired_powerups:
+            if powerup == "speed_power_up":
+                self.player_powerups['speed_power_up']+=1
+                self.player_turn_speed += 100
+                self.player_speed += 50
+            if powerup == "shot_power_up":
+                self.player_powerups['shot_power_up']-=1
+                self.player_shoot_speed -= 100
+                self.player_shoot_cooldown += 0.05
+            
+
 
     def update(self, dt):
         keys = pygame.key.get_pressed()

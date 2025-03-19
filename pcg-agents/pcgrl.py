@@ -24,6 +24,9 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
     """
     An Asteroids environment where:
     - The RL agent spawns asteroids (PCG).
+        -velocity, frequency, and size of the asteroids
+    - The RL agent spawns powerups (PCG).
+        -spawn rate, frequency, what kinds of powerups
     - The A* agent controls the player ship (movement + combat).
     """
 
@@ -94,14 +97,19 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
 
         # RL observation space:
         # e.g. [num_asteroids, player's x, player's y, ???]
+        # actions up down, left right, shoot, 
         low = np.array([0, 0, 0], dtype=np.float32)
         high = np.array([100, SCREEN_WIDTH, SCREEN_HEIGHT], dtype=np.float32)
         self.observation_space = spaces.Box(low, high, dtype=np.float32)
+        # acitons for RL agent would be
+        #spawning asteroids, spawning powerups, enemy?????
+        #spawning RL created effects, possibly
 
     def _get_obs(self):
         """
         Example observation: number of asteroids, player's position.
         Extend as needed (player health, velocities, etc.).
+        - health, velocity, position, bullets shot at given state, # of powerups collected
         """
         num_asts = len(self.asteroids)
         px, py = self.player.position.x, self.player.position.y
@@ -246,8 +254,10 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         """
         Simple reward function:
         + small reward for each asteroid destroyed (reflected in self.score)
-        - penalty if player dies
+        - penalty if player dies, including losing lives
         - small negative per step to limit spamming or drawn-out play
+        - small reward for powerups
+        - large reward for near miss, for dodging
         """
         reward = 0.0
 

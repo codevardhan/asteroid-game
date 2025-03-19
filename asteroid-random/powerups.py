@@ -3,16 +3,22 @@ from circleshape import *
 NEON_GREEN = (57, 255, 20)
 NEON_PINK = (255,20,147)
 NEON_RED = (255, 30, 30)
+EFFECT_DURATION = 5000
+# add despawn timer, add effect timer
 class PowerUp(CircleShape):
-    def __init__(self, x, y, radius,type):
+    def __init__(self, x, y, radius,type,ttl=5000):
         super().__init__(x,y,radius)
         self.type = type
         self.position = pygame.Vector2(x,y)
         self.radius = radius
         self.velocity = pygame.Vector2(0,0)
-
+        self.spawn_time = pygame.time.get_ticks()
+        self.ttl = 5000
     def update(self,dt):
         self.position += self.velocity * dt
+        self.ttl -= 1
+        if pygame.time.get_ticks() - self.spawn_time >= self.ttl:
+            self.kill()
     
     def collision_check(self, other):
         r1 = self.radius 
@@ -30,16 +36,19 @@ class PowerUp(CircleShape):
                 player.player_powerups['speed_power_up']+=1
                 player.player_turn_speed += 100
                 player.player_speed += 50
+                player.active_effects.append(("speed_power_up", pygame.time.get_ticks() + EFFECT_DURATION))
                 return
             case 'shot_power_up':
                 player.player_powerups['shot_power_up']+=1
                 player.player_shoot_speed += 100
                 player.player_shoot_cooldown -= 0.05
+                player.active_effects.append(("shot_power_up", pygame.time.get_ticks() + EFFECT_DURATION))
                 return
             case 'life_power_up':
                 player.player_powerups['life_power_up']+=1
                 player.player_lives += 1
                 return
+            
 class LifePowerUp(PowerUp):
     def __init__(self, x, y, radius):
         super().__init__(x,y,radius,"life_power_up")
