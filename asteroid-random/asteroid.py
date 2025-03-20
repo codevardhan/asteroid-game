@@ -52,13 +52,21 @@ class Asteroid(CircleShape):
         
         asteroid1 = Asteroid(self.position.x, self.position.y, new_radius)
         asteroid2 = Asteroid(self.position.x, self.position.y, new_radius)
-        if random.random() < 0.4:
-            if random.random() < 0.4:
-                powerup = ShotPowerUp(self.position.x,self.position.y,2)
-            elif random.random() < 0.6:
-                powerup = SpeedPowerUp(self.position.x,self.position.y,20)
-            else:
-                powerup = LifePowerUp(self.position.x,self.position.y,5)
+        # RL must decide when to let asteroids spawn powerups upon destruction
+        # random math as placeholder
+        r = random.random()
+        random_degrees = random.uniform(20, 50)
+        vector3 = pygame.math.Vector2.rotate(self.velocity,random_degrees)
+        if r > 0.6:
+            powerup = ShotPowerUp(self.position.x,self.position.y,2)
+            powerup.velocity = vector3
+        elif r < 0.6 and r > 0.3:
+            powerup = SpeedPowerUp(self.position.x,self.position.y,20)
+            powerup.velocity = vector3
+        else:
+            powerup = LifePowerUp(self.position.x,self.position.y,5)
+            powerup.velocity = vector3
+
         asteroid1.velocity = vector1 * 1.5 
         asteroid2.velocity = vector2 * 1.5
 
