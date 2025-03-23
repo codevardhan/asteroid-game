@@ -28,7 +28,7 @@ def collect_data(player,shots,score,elapsed_time,asteroids,powerups):
         "num_powerups_on_board":len(powerups),
         "num_asteroids_in_field":len(asteroids),
         "avg_speed_asteroids":np.mean([a.velocity for a in asteroids] if asteroids else 0),
-        "asteroid_spawn_rate": ASTEROID_SPAWN_RATE # type: ignore
+        "asteroid_spawn_rate": ASTEROID_SPAWN_RATE
     }
     training_data.append(state)
 

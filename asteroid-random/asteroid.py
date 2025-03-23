@@ -56,6 +56,7 @@ class Asteroid(CircleShape):
         # random math as placeholder
         r = random.random()
         random_degrees = random.uniform(20, 50)
+        # instead of creating asteroids here, extract out, and spawn in main gameplay loop
         vector3 = pygame.math.Vector2.rotate(self.velocity,random_degrees)
         if r > 0.6:
             powerup = ShotPowerUp(self.position.x,self.position.y,2)
