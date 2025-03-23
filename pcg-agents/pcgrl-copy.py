@@ -1,9 +1,13 @@
 
+import os
 import sys
+import time
 #using random asteroid implementation
+main_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(main_dir,"agents"))
+sys.path.append(os.path.join(main_dir,"asteroid-random"))
 sys.path.insert(0, 'asteroid-random')
 sys.path.insert(0, 'agents')
-
 from a_star import AStarAgent
 from constants import *
 
@@ -36,8 +40,8 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
 
     def __init__(
         self,
-        render_mode=None,
-        max_steps=600,
+        render_mode="human",
+        max_steps=10000,
         spawn_limit=3,
         replan_interval=0.5,
     ):
@@ -51,7 +55,9 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         self.render_mode = render_mode
         self.max_steps = max_steps
         self.spawn_limit = spawn_limit
-
+        self.max_asteroids = 30
+        self.last_spawn_time = time.time()
+        self.spawn_interval = 2.0 # 2 seconds spawn rate
         # Pygame init
         if self.render_mode == "human":
             pygame.init()
@@ -73,7 +79,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
         AsteroidField.containers = self.updatables
-        PowerUps.containers = (self.powerups,self.updatables,self.drawables)
+        PowerUp.containers = (self.powerups,self.updatables,self.drawables)
 
         # A* agent (the "surrogate player" logic)
         self.astar_agent = AStarAgent(
@@ -130,18 +136,20 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         self.drawables.empty()
         self.asteroids.empty()
         self.shots.empty()
+        self.powerups.empty()
 
         # Create new
         self.asteroid_field = AsteroidField()
         Player.containers = (self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
+        PowerUp.containers = (self.powerups, self.updatables, self.drawables)
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
         # A* agent fresh start
         self.astar_agent.current_path = []
         self.astar_agent.time_since_replan = 0.0
-
+        self.lives = 0
         self.score = 0
         self.steps_elapsed = 0
         self.game_over = False
@@ -155,8 +163,11 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         """
         # 1) Spawn asteroids based on the RL action
         spawn_count = int(action)  # 0..spawn_limit
-        for _ in range(spawn_count):
-            self._spawn_asteroid()
+        current_time = time.time()
+        if current_time - self.last_spawn_time >= self.spawn_interval and self.max_asteroids > len(self.asteroids):
+            for _ in range(spawn_count):
+                self._spawn_asteroid()
+            self.last_spawn_time = current_time
 
         # 2) Let the A* agent update (which controls the player for one tick).
         dt = 1.0 / 60.0
@@ -177,6 +188,10 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
 
     def render(self):
         if self.render_mode == "human":
+            if not pygame.get_init():
+                print("Pygame is not initialized! Initializing now...")
+                pygame.init()
+
             self.screen.fill((0, 0, 0))
             for d in self.drawables:
                 d.draw(self.screen)
@@ -201,7 +216,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
                 self.close()
 
         # A* controls the player
-        self.astar_agent.update(dt, self.player, self.asteroids)
+        self.astar_agent.update(dt, self.player, self.asteroids,self.powerups)
 
         # Now update all sprites (position, collisions, etc.)
         for upd in self.updatables:
@@ -216,9 +231,11 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
             if asteroid.collision_check(self.player):
                 # Player collision check whether player lost all lives
                 self.player.player_lives -= 1
+                self.player.position.x = SCREEN_WIDTH / 2
+                self.player.position.y = SCREEN_HEIGHT / 2
                 self.lives = self.player.player_lives
                 if self.lives == 0:
-                    self.game_over = True
+                    game_over = True
                 break
             # Shots
             for shot in self.shots:
@@ -285,3 +302,23 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         reward -= 0.01
 
         return reward
+
+if __name__ == "__main__":
+    env = AsteroidsPCGEnvWithAStar(render_mode="human")  # Create the environment
+    print("Resetting environment...")
+    obs, _ = env.reset()  # Reset the environment to get the initial state
+    done = False
+
+    while not done:
+        action = env.action_space.sample()  # Sample a random action
+        #print(f"Taking action: {action}")
+        obs, reward, terminated, truncated, _ = env.step(action)
+        #print(f"Step successful. Reward: {reward}")
+        #print(obs)
+        env.render()  # Render the environment
+
+        if terminated or truncated:
+            print("Game Over")
+            done = True
+
+    env.close()

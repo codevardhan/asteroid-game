@@ -1,5 +1,9 @@
 
+import os
 import sys
+#using random asteroid implementation
+main_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(main_dir,"agents"))
 sys.path.insert(0, 'game/original')
 sys.path.insert(0, 'agents')
 
@@ -31,10 +35,9 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
     """
 
     metadata = {"render_modes": ["human"], "render_fps": 30}
-
     def __init__(
         self,
-        render_mode=None,
+        render_mode="human",
         max_steps=600,
         spawn_limit=3,
         replan_interval=0.5,
@@ -272,3 +275,19 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         reward -= 0.01
 
         return reward
+
+if __name__ == "__main__":
+    env = AsteroidsPCGEnvWithAStar(render_mode="human")  # Create the environment
+
+    obs, _ = env.reset()  # Reset the environment to get the initial state
+    done = False
+
+    while not done:
+        action = env.action_space.sample()  # Sample a random action
+        obs, reward, terminated, truncated, _ = env.step(action)
+        env.render()  # Render the environment
+
+        if terminated or truncated:
+            done = True
+
+    env.close()

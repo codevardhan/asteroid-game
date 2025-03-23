@@ -1,12 +1,10 @@
 import sys
-sys.path.insert(0, '../game/original')
-
-
-
+sys.path.insert(0, '../asteroid-random')
 from player import Player
 from shot import Shot
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
+from powerups import PowerUp
 import pygame
 import pygame.freetype
 import random
@@ -47,7 +45,7 @@ class AStarAgent:
         self.shoot_distance = shoot_distance
         self.shoot_angle_thresh = shoot_angle_thresh
 
-    def update(self, dt, player, asteroids):
+    def update(self, dt, player, asteroids,powerups):
         """
         AI update step. 
         1) Possibly replan path with A*
@@ -58,7 +56,7 @@ class AStarAgent:
 
         # 1) Replan if needed
         if self.time_since_replan > self.replan_interval:
-            self.current_path = self.plan_path(player, asteroids)
+            self.current_path = self.plan_path(player, asteroids,powerups)
             self.time_since_replan = 0.0
 
         # 2) Combat check: see if we can shoot an asteroid
@@ -125,7 +123,7 @@ class AStarAgent:
             angle += 360
         return angle
 
-    def plan_path(self, player, asteroids):
+    def plan_path(self, player, asteroids,powerups):
         """
         1. Build a grid representation (passable / blocked).
         2. Decide on a goal cell (e.g., the cell that is farthest from all asteroids).
@@ -137,10 +135,13 @@ class AStarAgent:
         # Convert player's position to a grid cell
         start_cell = self.world_to_grid(player.position.x, player.position.y)
 
-        # Choose a goal cell. For example, pick the cell that
-        # is farthest from all asteroids (in grid space).
-        goal_cell = self.find_safest_cell(grid, asteroids)
+        goal_cell = self.find_best_powerup(grid,powerups)
+        #goal_cell = self.find_safest_cell(grid, asteroids)
 
+        if goal_cell is None:
+            # Choose a goal cell. For example, pick the cell that
+            # is farthest from all asteroids (in grid space). if unable to find powerups
+            goal_cell = self.find_safest_cell(grid, asteroids)
         if goal_cell is None:
             # No safe place found. Return empty path, might just drift or try to shoot.
             return []
@@ -213,6 +214,32 @@ class AStarAgent:
 
         return best_cell
 
+    def find_best_powerup(self,grid,powerups):
+        best_cell = None
+        best_dist = -1
+
+        rows = len(grid)
+        cols = len(grid[0]) if rows > 0 else 0
+
+        for row in range(rows):
+            for col in range(cols):
+                if not grid[row][col]:
+                    continue
+                # Center of cell in world coords
+                cx, cy = self.grid_to_world(col, row)
+                # measure distance to nearest powerup
+                nearest_powerup_dist = float("inf")
+                for powerup in powerups:
+                    dist = math.hypot(cx - powerup.position.x,
+                                      cy - powerup.position.y)
+                    if dist < nearest_powerup_dist:
+                        nearest_powerup_dist = dist
+
+                if nearest_powerup_dist > best_dist:
+                    best_dist = nearest_powerup_dist
+                    best_cell = (col, row)
+
+        return best_cell
     def a_star_search(self, grid, start_cell, goal_cell):
         """
         A standard A* search on a 2D grid.
@@ -381,18 +408,19 @@ def main():
     drawables = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    powerups = pygame.sprite.Group()
 
     # Containers
     Asteroid.containers = (asteroids, updatables, drawables)
     Shot.containers = (shots, updatables, drawables)
     AsteroidField.containers = updatables
-
+    PowerUp.containers = (powerups,updatables,drawables)
     asteroid_field = AsteroidField()
 
     dt = 0
     game_over = False
     score = 0
-
+    lives = 0
     # Instantiate the player and the AI agent
     Player.containers = (updatables, drawables)
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
@@ -414,7 +442,7 @@ def main():
         dt = clock.tick(60) / 1000.0
 
         # A* agent decides how to move the player
-        agent.update(dt, player, asteroids)
+        agent.update(dt, player, asteroids,powerups)
 
         # Update game objects
         for updateable in updatables:
@@ -423,19 +451,29 @@ def main():
         # Collisions
         for asteroid in asteroids:
             if asteroid.collision_check(player):
-                game_over = True
+                player.player_lives -= 1
+                player.position.x = SCREEN_WIDTH / 2
+                player.position.y = SCREEN_HEIGHT / 2
+                lives = player.player_lives
+                if lives == 0:
+                    game_over = True
             for shot in shots:
                 if asteroid.collision_check(shot):
                     asteroid.split()
                     shot.kill()
                     score += 1
 
+        for powerup in powerups:
+            if powerup.collision_check(player):
+                powerup.apply_effect(player)
+                lives = player.player_lives
+                powerup.remove()
         # Draw
         for drawable in drawables:
             drawable.draw(screen)
 
         font.render_to(screen, (10, 10), f"Score: {score}", (255, 255, 255))
-
+        font.render_to(screen, (180,10),f"Lives: {lives}",(255,255,255))
         if game_over:
             font.render_to(screen, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2),
                            "GAME OVER", (255, 255, 255))
