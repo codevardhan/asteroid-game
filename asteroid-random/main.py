@@ -1,4 +1,5 @@
 import json
+from powerup_manager import PowerUpManager
 import pygame # type: ignore
 import pygame.freetype # type: ignore
 from constants import *
@@ -6,10 +7,11 @@ from player import Player
 from asteroid import Asteroid
 from asteroidfield import *
 from shot import Shot
-from powerups import PowerUp
+from powerups import LifePowerUp, PowerUp, ShotPowerUp, SpeedPowerUp
 import numpy as np
+
 training_data = []
-def collect_data(player,shots,score,elapsed_time,asteroids,powerups):
+def collect_data(player,shots,score,elapsed_time,asteroids,powerups,action):
     state = {
         "player_x":player.position.x,
         "player_y":player.position.y,
@@ -28,7 +30,8 @@ def collect_data(player,shots,score,elapsed_time,asteroids,powerups):
         "num_powerups_on_board":len(powerups),
         "num_asteroids_in_field":len(asteroids),
         "avg_speed_asteroids":np.mean([a.velocity for a in asteroids] if asteroids else 0),
-        "asteroid_spawn_rate": ASTEROID_SPAWN_RATE
+        "asteroid_spawn_rate": ASTEROID_SPAWN_RATE,
+        "action":action
     }
     training_data.append(state)
 
@@ -55,8 +58,10 @@ def main():
     PowerUp.containers = (powerups,updatables,drawables)
 
     AsteroidField.containers = updatables
-    asteroid_field = AsteroidField()
+    PowerUpManager.containers = updatables
 
+    asteroid_field = AsteroidField()
+    powerup_manager = PowerUpManager()
 
     dt = 0
     game_over = False
@@ -85,10 +90,11 @@ def main():
                     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     lives = player.player_lives
                     asteroid_field = AsteroidField()
+                    powerup_manager = PowerUpManager()
             
             
         screen.fill((0,0,0)) 
-        
+        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
         for drawable in drawables:
             drawable.draw(screen)
 
@@ -97,6 +103,9 @@ def main():
         
         for updateable in updatables:
             updateable.update(dt)
+            if asteroid_field.action != None:
+                collect_data(player,shots,score,elapsed_time,asteroids,powerups,asteroid_field.action)
+                asteroid_field.action = None
             
         for asteroid in asteroids:
             if asteroid.collision_check(player):
@@ -112,7 +121,9 @@ def main():
         
             for shot in shots:
                 if asteroid.collision_check(shot):
-                    asteroid.split()
+                    asteroid.split(powerup_manager)
+                    if powerup_manager.action != None:
+                        collect_data(player,shots,score,elapsed_time,asteroids,powerups,powerup_manager.action)
                     shot.kill()
                     score += 1
                     # print("hit")
@@ -124,11 +135,10 @@ def main():
                 lives = player.player_lives
                 powerup.remove()
 
-        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
         font.render_to(screen, (10,10), f"Score: {score}", (255,255,255))
         font.render_to(screen, (180,10),f"Lives: {lives}",(255,255,255))
         font.render_to(screen,(SCREEN_WIDTH - 300,10),f"Time: {elapsed_time}",(255,255,255))
-        collect_data(player,shots,score,elapsed_time,asteroids,powerups)
+        collect_data(player,shots,score,elapsed_time,asteroids,powerups,"No_Spawn")
         if game_over:
             font.render_to(screen, (SCREEN_WIDTH //2 -100, SCREEN_HEIGHT // 2), "GAME OVER", (255,255,255))
             font.render_to(screen, (SCREEN_WIDTH //2 -140, SCREEN_HEIGHT //2 +50),"Press R to restart", (255,255,255))

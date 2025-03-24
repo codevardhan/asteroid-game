@@ -54,20 +54,8 @@ class Asteroid(CircleShape):
         asteroid2 = Asteroid(self.position.x, self.position.y, new_radius)
         # RL must decide when to let asteroids spawn powerups upon destruction
         # random math as placeholder
-        r = random.random()
         random_degrees = random.uniform(20, 50)
         # instead of creating asteroids here, extract out, and spawn in main gameplay loop
-        vector3 = pygame.math.Vector2.rotate(self.velocity,random_degrees)
-        if r > 0.6:
-            powerup = ShotPowerUp(self.position.x,self.position.y,2)
-            powerup.velocity = vector3
-        elif r < 0.6 and r > 0.3:
-            powerup = SpeedPowerUp(self.position.x,self.position.y,20)
-            powerup.velocity = vector3
-        else:
-            powerup = LifePowerUp(self.position.x,self.position.y,5)
-            powerup.velocity = vector3
-
         asteroid1.velocity = vector1 * 1.5 
         asteroid2.velocity = vector2 * 1.5
 
@@ -77,3 +65,7 @@ class Asteroid(CircleShape):
         if self.position.distance_to(other.position) <= r1 + r2:
             return True
         return False
+    
+    def destroy(self, powerup_manager):
+        powerup_manager.spawn_from_asteroid(self)
+        self.kill()

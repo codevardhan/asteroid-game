@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+
 #using random asteroid implementation
 main_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(main_dir,"agents"))
@@ -16,7 +17,7 @@ from asteroid import Asteroid
 from shot import Shot
 from player import Player
 from powerups import PowerUp
-
+from powerup_manager import PowerUpManager
 from stable_baselines3 import PPO
 import gymnasium as gym
 from gymnasium import spaces
@@ -78,6 +79,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
         AsteroidField.containers = self.updatables
+        PowerUpManager.containers = self.updatables
         PowerUp.containers = (self.powerups,self.updatables,self.drawables)
 
         # A* agent (the "surrogate player" logic)
@@ -90,7 +92,11 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         )
 
         self.asteroid_field = AsteroidField()
-
+        self.powerup_manager = PowerUpManager()
+        self.last_asteroid_destroyed = None
+        self.speed_powerup_last_taken = 0
+        self.shot_powerup_last_taken = 0
+        self.life_powerup_last_taken = 0
         # Create the player
         Player.containers = (self.updatables, self.drawables)
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
@@ -100,16 +106,15 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         self.steps_elapsed = 0
         self.game_over = False
         self.lives = 0
-        # RL action space: integer from 0..spawn_limit
-        # => how many asteroids to spawn this step
-        self.action_space = spaces.Discrete(self.spawn_limit + 1)
+        #Actions 0: No Spawn 1: Spawn Asteroid 2: Spawn PowerUp
+        self.action_space = spaces.Discrete(3)
 
         # RL observation space:
         # e.g. [num_asteroids, player's x, player's y, ???]
         # actions up down, left right, shoot, 
         low = np.array([0, 0, 0], dtype=np.float32)
         high = np.array([100, SCREEN_WIDTH, SCREEN_HEIGHT], dtype=np.float32)
-        self.observation_space = spaces.Box(low, high, dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(12,), dtype=np.float32)
         # acitons for RL agent would be
         #spawning asteroids, spawning powerups, enemy?????
         #spawning RL created effects, possibly
@@ -124,7 +129,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         px, py = self.player.position.x, self.player.position.y
         pvx,pvy = self.player.velocity.x, self.player.velocity.y
         l = self.player.player_lives
-        avg_speed_asteroids = float(np.mean([a.velocity.x for a in self.asteroids] if self.asteroids else 0))
+        avg_speed_asteroids = float(np.mean([a.velocity.x for a in self.asteroids] if self.asteroids else 0)) if self.asteroids else 0.0
         num_p = len(self.powerups)
         num_speed_power_up_taken = float(self.player.player_powerups['speed_power_up'])
         num_shot_power_up_taken = float(self.player.player_powerups['shot_power_up'])
@@ -149,6 +154,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
 
         # Create new
         self.asteroid_field = AsteroidField()
+        self.powerup_manager = PowerUpManager()
         Player.containers = (self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
@@ -171,20 +177,22 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         Then we let the A* agent control the player for 1 step of the simulation.
         """
         # 1) Spawn asteroids based on the RL action
-        spawn_count = int(action)  # 0..spawn_limit
-        current_time = time.time()
-        if current_time - self.last_spawn_time >= self.spawn_interval:
-            for _ in range(spawn_count):
+        action = int(action)  # 0..spawn_limit
+        if action == 1:
+            current_time = time.time()
+            if current_time - self.last_spawn_time >= self.spawn_interval:
                 self._spawn_asteroid()
-            self.last_spawn_time = current_time
-
+                self.last_spawn_time = current_time
+        if action == 2 and self.last_asteroid_destroyed != None:
+            self.powerup_manager.spawn_from_asteroid(self.last_asteroid_destroyed)
         # 2) Let the A* agent update (which controls the player for one tick).
         dt = 1.0 / 60.0
         self._update_game(dt)
 
         # 3) Compute reward
         reward = self._compute_reward()
-
+        self.shot_powerup_last_taken = 0
+        self.speed_powerup_last_taken = 0
         # 4) Build observation
         obs = self._get_obs()
 
@@ -230,7 +238,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         # Now update all sprites (position, collisions, etc.)
         for upd in self.updatables:
             upd.update(dt)
-
+        self.last_asteroid_destroyed = None
         self._handle_collisions()
         self._wrap_sprites()
 
@@ -250,6 +258,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
             for shot in self.shots:
                 if asteroid.collision_check(shot):
                     asteroid.split()
+                    self.last_asteroid_destroyed = asteroid
                     shot.kill()
                     self.score += 1
 
@@ -257,6 +266,10 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
             if powerup.collision_check(self.player):
                 powerup.apply_effect(self.player)
                 self.lives = self.player.player_lives
+                if powerup.type == 'speed_power_up':
+                    self.speed_powerup_last_taken += 1
+                if powerup.type == "shot_power_up":
+                    self.shot_powerup_last_taken += 1
                 powerup.remove()
     def _wrap_sprites(self):
         """
@@ -314,7 +327,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
             reward -= 0.5
         if len(self.asteroids) > 5 and len(self.asteroids) < 50:
             reward += 0.5
-        if self.player.player_powerups['speed_power_up'] > 1 or self.player.player_powerups['shot_power_up'] > 1:
+        if self.shot_powerup_last_taken > 1 or self.speed_powerup_last_taken > 1:
             reward += 0.2
         if self.lives > 1:
             reward += 0.3
@@ -324,22 +337,34 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         return reward
 
 if __name__ == "__main__":
-    for _ in range(10000):
-        env = AsteroidsPCGEnvWithAStar(render_mode="human")  # Create the environment
-        print("Resetting environment...")
-        obs, _ = env.reset()  # Reset the environment to get the initial state
-        done = False
+    # for _ in range(10000):
+    #     env = AsteroidsPCGEnvWithAStar(render_mode="None")  # Create the environment
+    #     print("Resetting environment...")
+    #     obs, _ = env.reset()  # Reset the environment to get the initial state
+    #     done = False
 
-        while not done:
-            action = env.action_space.sample()  # Sample a random action
-        #print(f"Taking action: {action}")
-            obs, reward, terminated, truncated, _ = env.step(action)
-        #print(f"Step successful. Reward: {reward}")
-        #print(obs)
-            env.render()  # Render the environment
+    #     while not done:
+    #         action = env.action_space.sample()  # Sample a random action
+    #     #print(f"Taking action: {action}")
+    #         obs, reward, terminated, truncated, _ = env.step(action)
+    #     #print(f"Step successful. Reward: {reward}")
+    #     #print(obs)
+    #         env.render()  # Render the environment
 
-            if terminated or truncated:
-                print("Game Over")
-                done = True
+    #         if terminated or truncated:
+    #             print("Game Over")
+    #             done = True
 
-        env.close()
+    #     env.close()
+    env = AsteroidsPCGEnvWithAStar(render_mode="None")
+
+# Initialize the PPO model with a simple MLP (neural network) policy
+    model = PPO("MlpPolicy", env, verbose=1)
+
+# Train for 500,000 timesteps
+    model.learn(total_timesteps=500000)
+
+# Save the trained model
+    model.save("asteroids_ppo")
+
+    env.close()

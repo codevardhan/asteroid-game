@@ -219,7 +219,12 @@ class AStarAgent:
         best_dist = float("inf")
         for powerup in powerups:
             powerup_cell = self.world_to_grid(powerup.position.x, powerup.position.y)
-
+            if (
+                powerup_cell[1] < 0 or powerup_cell[1] >= len(grid) or
+                powerup_cell[0] < 0 or powerup_cell[0] >= len(grid[0])
+                ):
+                print(f"Skipping out-of-bounds powerup cell: {powerup_cell}")
+                continue
             if not grid[powerup_cell[1]][powerup_cell[0]]:
                 continue
 
@@ -417,8 +422,8 @@ def main():
     Player.containers = (updatables, drawables)
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     # Expose player's turning/thrust speeds if needed (or just rely on constants)
-    player.PLAYER_TURN_SPEED = PLAYER_TURN_SPEED
-    player.PLAYER_SPEED = PLAYER_SPEED
+    player.player_turn_speed = PLAYER_TURN_SPEED
+    player.player_speed = PLAYER_SPEED
 
     # AStar agent
     agent = AStarAgent()
