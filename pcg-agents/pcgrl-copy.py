@@ -41,7 +41,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
     def __init__(
         self,
         render_mode="human",
-        max_steps=10000,
+        max_steps=100000,
         spawn_limit=3,
         replan_interval=0.5,
     ):
@@ -55,7 +55,6 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         self.render_mode = render_mode
         self.max_steps = max_steps
         self.spawn_limit = spawn_limit
-        self.max_asteroids = 30
         self.last_spawn_time = time.time()
         self.spawn_interval = 2.0 # 2 seconds spawn rate
         # Pygame init
@@ -123,7 +122,17 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         """
         num_asts = len(self.asteroids)
         px, py = self.player.position.x, self.player.position.y
-        obs = np.array([num_asts, px, py], dtype=np.float32)
+        pvx,pvy = self.player.velocity.x, self.player.velocity.y
+        l = self.player.player_lives
+        avg_speed_asteroids = float(np.mean([a.velocity.x for a in self.asteroids] if self.asteroids else 0))
+        num_p = len(self.powerups)
+        num_speed_power_up_taken = float(self.player.player_powerups['speed_power_up'])
+        num_shot_power_up_taken = float(self.player.player_powerups['shot_power_up'])
+        num_life_power_up_taken = float(self.player.player_powerups['life_power_up'])
+        num_active_powerups = float(len(self.player.active_effects))
+        obs = np.array([num_asts, px, py,pvx,pvy,l,avg_speed_asteroids,
+        num_p,num_speed_power_up_taken,num_shot_power_up_taken,
+        num_life_power_up_taken,num_active_powerups], dtype=np.float32)
         return obs
 
     def reset(self, seed=None, options=None):
@@ -164,7 +173,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         # 1) Spawn asteroids based on the RL action
         spawn_count = int(action)  # 0..spawn_limit
         current_time = time.time()
-        if current_time - self.last_spawn_time >= self.spawn_interval and self.max_asteroids > len(self.asteroids):
+        if current_time - self.last_spawn_time >= self.spawn_interval:
             for _ in range(spawn_count):
                 self._spawn_asteroid()
             self.last_spawn_time = current_time
@@ -235,7 +244,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
                 self.player.position.y = SCREEN_HEIGHT / 2
                 self.lives = self.player.player_lives
                 if self.lives == 0:
-                    game_over = True
+                    self.game_over = True
                 break
             # Shots
             for shot in self.shots:
@@ -297,28 +306,40 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
 
         if self.game_over:
             reward -= 5.0
-
+        if len(self.player.active_effects) > 0:
+            reward += 0.25
+        if len(self.player.active_effects) > 10:
+            reward -= 0.25
+        if len(self.asteroids) > 50:
+            reward -= 0.5
+        if len(self.asteroids) > 5 and len(self.asteroids) < 50:
+            reward += 0.5
+        if self.player.player_powerups['speed_power_up'] > 1 or self.player.player_powerups['shot_power_up'] > 1:
+            reward += 0.2
+        if self.lives > 1:
+            reward += 0.3
         # small negative step cost
         reward -= 0.01
 
         return reward
 
 if __name__ == "__main__":
-    env = AsteroidsPCGEnvWithAStar(render_mode="human")  # Create the environment
-    print("Resetting environment...")
-    obs, _ = env.reset()  # Reset the environment to get the initial state
-    done = False
+    for _ in range(10000):
+        env = AsteroidsPCGEnvWithAStar(render_mode="human")  # Create the environment
+        print("Resetting environment...")
+        obs, _ = env.reset()  # Reset the environment to get the initial state
+        done = False
 
-    while not done:
-        action = env.action_space.sample()  # Sample a random action
+        while not done:
+            action = env.action_space.sample()  # Sample a random action
         #print(f"Taking action: {action}")
-        obs, reward, terminated, truncated, _ = env.step(action)
+            obs, reward, terminated, truncated, _ = env.step(action)
         #print(f"Step successful. Reward: {reward}")
         #print(obs)
-        env.render()  # Render the environment
+            env.render()  # Render the environment
 
-        if terminated or truncated:
-            print("Game Over")
-            done = True
+            if terminated or truncated:
+                print("Game Over")
+                done = True
 
-    env.close()
+        env.close()

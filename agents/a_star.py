@@ -25,9 +25,9 @@ class AStarAgent:
     def __init__(
         self,
         grid_size=(64, 36),
-        safe_distance=50,
-        replan_interval=0.5,
-        shoot_distance=300,    # Max distance to attempt shooting
+        safe_distance=70,
+        replan_interval=0.4,
+        shoot_distance=500,    # Max distance to attempt shooting
         # Angle threshold (degrees) to consider an asteroid "in front"
         shoot_angle_thresh=40,
     ):
@@ -106,7 +106,7 @@ class AStarAgent:
             # Typically in your code, you do something like:
             if player.timer <= 0:
                 player.shoot()
-                player.timer = PLAYER_SHOOT_COOLDOWN
+                player.timer = player.player_shoot_cooldown
 
     def angle_between(self, vecA, vecB):
         """
@@ -135,7 +135,7 @@ class AStarAgent:
         # Convert player's position to a grid cell
         start_cell = self.world_to_grid(player.position.x, player.position.y)
 
-        goal_cell = self.find_best_powerup(grid,powerups)
+        goal_cell = self.find_best_powerup(grid,powerups,player)
         #goal_cell = self.find_safest_cell(grid, asteroids)
 
         if goal_cell is None:
@@ -214,32 +214,24 @@ class AStarAgent:
 
         return best_cell
 
-    def find_best_powerup(self,grid,powerups):
+    def find_best_powerup(self,grid,powerups,player):
         best_cell = None
-        best_dist = -1
+        best_dist = float("inf")
+        for powerup in powerups:
+            powerup_cell = self.world_to_grid(powerup.position.x, powerup.position.y)
 
-        rows = len(grid)
-        cols = len(grid[0]) if rows > 0 else 0
+            if not grid[powerup_cell[1]][powerup_cell[0]]:
+                continue
 
-        for row in range(rows):
-            for col in range(cols):
-                if not grid[row][col]:
-                    continue
-                # Center of cell in world coords
-                cx, cy = self.grid_to_world(col, row)
-                # measure distance to nearest powerup
-                nearest_powerup_dist = float("inf")
-                for powerup in powerups:
-                    dist = math.hypot(cx - powerup.position.x,
-                                      cy - powerup.position.y)
-                    if dist < nearest_powerup_dist:
-                        nearest_powerup_dist = dist
+            player_cell = self.world_to_grid(player.position.x, player.position.y)
+            dist = math.hypot(powerup_cell[0] - player_cell[0], powerup_cell[1] - player_cell[1])
 
-                if nearest_powerup_dist > best_dist:
-                    best_dist = nearest_powerup_dist
-                    best_cell = (col, row)
+            if dist < best_dist:
+                best_dist = dist
+                best_cell = powerup_cell
 
         return best_cell
+
     def a_star_search(self, grid, start_cell, goal_cell):
         """
         A standard A* search on a 2D grid.
@@ -380,9 +372,9 @@ class AStarAgent:
         diff = (desired_angle - current_angle) % 360
         
         if diff > 180:
-            player.rotation -= PLAYER_TURN_SPEED * dt
+            player.rotation -= player.player_speed * dt
         else:
-            player.rotation += PLAYER_TURN_SPEED * dt
+            player.rotation += player.player_speed * dt
 
         self.thrust_forward(dt, player)
 
@@ -392,7 +384,7 @@ class AStarAgent:
         We'll re-use the same logic as in your Player's .move() if possible.
         """
         forward = pygame.Vector2(0, 1).rotate(player.rotation)
-        move_speed = PLAYER_SPEED  # e.g. 200
+        move_speed = player.player_speed  # e.g. 200
         player.position += forward * move_speed * dt
 
 
