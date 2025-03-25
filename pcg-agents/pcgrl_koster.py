@@ -226,11 +226,15 @@ class AsteroidsPCGEnvKoster(gym.Env):
 
         return obs, reward, terminated, truncated, debug_info
 
-    def render(self):
+    def render(self, info):
         if self.render_mode == "human":
             self.screen.fill((0, 0, 0))
             for d in self.drawables:
                 d.draw(self.screen)
+            self.font.render_to(
+                self.screen, (10, 10), f"Score: {info['score']}", (255, 255, 255)
+            )
+
             pygame.display.flip()
             self.clock.tick(self.metadata["render_fps"])
 
