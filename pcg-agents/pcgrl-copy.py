@@ -356,15 +356,26 @@ if __name__ == "__main__":
     #             done = True
 
     #     env.close()
-    env = AsteroidsPCGEnvWithAStar(render_mode="None")
+#     env = AsteroidsPCGEnvWithAStar(render_mode="None")
 
-# Initialize the PPO model with a simple MLP (neural network) policy
-    model = PPO("MlpPolicy", env, verbose=1)
+# # Initialize the PPO model with a simple MLP (neural network) policy
+#     model = PPO("MlpPolicy", env, verbose=1)
 
-# Train for 500,000 timesteps
-    model.learn(total_timesteps=500000)
+# # Train for 500,000 timesteps
+#     model.learn(total_timesteps=500000)
 
-# Save the trained model
-    model.save("asteroids_ppo")
+# # Save the trained model
+#     model.save("asteroids_ppo")
 
-    env.close()
+#     env.close()
+    for _ in range(10000):
+        env = AsteroidsPCGEnvWithAStar(render_mode="human") 
+        model = PPO.load("asteroids_ppo")
+
+        obs, _ = env.reset()
+        done = False
+
+        while not done:
+            action, _ = model.predict(obs) 
+            obs, reward, done, truncated, _ = env.step(action)
+            env.render()    
