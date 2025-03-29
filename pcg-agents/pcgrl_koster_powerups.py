@@ -119,7 +119,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
         low = np.array([0, 0, 0, 0], dtype=np.float32)
         high = np.array([100, SCREEN_WIDTH, SCREEN_HEIGHT, 100], dtype=np.float32)
         self.observation_space = spaces.Box(low, high, dtype=np.float32)
-        self.MAX_ASTEROIDS = 10
+        self.MAX_ASTEROIDS = 40
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -245,6 +245,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
     def _get_obs(self):
         """
         Observation includes near-miss count to inform the agent about 'challenge' level.
+        Changing buckets to discretize state space
         """
         num_asts = len(self.asteroids)
         if num_asts < 10:
@@ -257,10 +258,17 @@ class AsteroidsPCGEnvKoster(gym.Env):
             num_asts_bucket = 3
 
         px, py = self.player.position.x, self.player.position.y
+
         num_pup = len(self.powerups)
-        p_lives = self.player.player_lives
+        if num_pup < 3:
+            num_pup_bucket = 0
+        elif num_pup >=3 and num_pup < 5:
+            num_pup_bucket = 1
+        elif num_pup >=5:
+            num_pup_bucket = 2
 
         #player lives bucket
+        p_lives = self.player.player_lives
         if p_lives == 1:
             p_lives_bucket = 0
         elif p_lives > 2 and p_lives < 5:
