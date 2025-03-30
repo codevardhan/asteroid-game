@@ -308,12 +308,16 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.player = None
         self.asteroids = pygame.sprite.Group()
         self.shots = pygame.sprite.Group()
+        self.powerups = pygame.sprite.Group()
         self.updatables = pygame.sprite.Group()
 
         self.score = 0
+        self.lives = 1
+        self.collected = 0
         self.game_over = False
         self.steps_elapsed = 0
 
+        self.last_asteroid_destroyed = None
         self.near_miss_count = 0
         self.last_spawns = []
         self.dt = 0.016
@@ -340,7 +344,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.asteroids.empty()
         self.shots.empty()
         self.updatables.empty()
-
+        self.powerups.empty(0)
         # Create player at center
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.updatables.add(self.player)
@@ -400,19 +404,27 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 pass  # Movement already handled
             elif isinstance(s, Asteroid):
                 s.position += s.velocity * self.dt
-
+            elif isinstance(s,PowerUp):
+                s.position += s.velocity * self.dt
         # 4) Handle collisions
         destroyed = 0
         for asteroid in list(self.asteroids):
             if asteroid.collision_check(self.player):
-                self.game_over = True
+                self.player.player_lives -= 1
+                if self.player.player_lives == 0:
+                    self.game_over = True
             for shot in list(self.shots):
                 if asteroid.collision_check(shot):
+                    self.last_asteroid_destroyed = asteroid
                     shot.kill()
                     asteroid.kill()
                     destroyed += 1
                     break
-
+        for powerup in list(self.powerups):
+            if powerup.collision_check(self.player):
+                self.collected += 1   
+                powerup.apply_effect(self.player)
+                powerup.remove()         
         self.score += destroyed
 
         # 5) Count near misses
@@ -427,7 +439,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.game_over = True
 
         # 7) Compute rewards
-        player_reward = float(destroyed)
+        player_reward = float(destroyed) + float(self.collected)
         asteroid_reward = self._compute_fun_reward()
 
         # 8) Set termination flags (using new Gymnasium API style)
@@ -512,7 +524,12 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         1 => spawn asteroid
         2 => spawn powerup
         """
-        if a == 0 or a == 2:
+        if a == 0:
+            return
+        if a==2 and self.last_asteroid_destroyed == None:
+            return
+        if a==2 and self.last_asteroid_destroyed != None:
+            self.spawn_from_asteroid(self.last_asteroid_destroyed)
             return
 
         edge = random.choice(ASTEROID_EDGES)
@@ -537,6 +554,44 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         if len(self.last_spawns) > 20:
             self.last_spawns.pop(0)
 
+    def spawn_from_asteroid(self,asteroid):
+            
+            life_weight = 0.2
+            shot_weight = 0.3
+            speed_weight = 0.5
+
+            if self.player.player_lives < 2: 
+                life_weight += 0.4
+            if len(self.asteroids) > 10: 
+                shot_weight += 0.3 
+            if len(self.asteroids) <= 5 and self.player.player_lives >= 2:  
+                speed_weight += 0.3 
+            total = life_weight + shot_weight + speed_weight
+            life_weight /= total
+            shot_weight /= total
+            speed_weight /= total
+            powerup_type = random.choice(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight])
+            vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
+            if powerup_type == "shot":
+                powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
+                powerup.velocity = vector3
+                self.action = "PowerUp_Spawned_Shot"
+                self.powerups.add(powerup)
+                self.updatables.add(powerup)
+            elif powerup_type == "speed":
+                powerup = SpeedPowerUp(asteroid.position.x,asteroid.position.y,20)
+                powerup.velocity = vector3
+                self.action = "PowerUp_Spawned_Speed"
+                self.powerups.add(powerup)
+                self.updatables.add(powerup)
+            elif powerup_type == "life":
+                powerup = LifePowerUp(asteroid.position.x,asteroid.position.y,5)
+                powerup.velocity = vector3
+                self.action = "PowerUp_Spawned_Life"
+                self.powerups.add(powerup)
+                self.updatables.add(powerup)
+        
+    
     # ----------------------------
     #   Observations
     # ----------------------------

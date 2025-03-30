@@ -400,6 +400,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         if len(self.last_spawns) > 20:
             self.last_spawns.pop(0)
 
+
     # ----------------------------
     #   Observations
     # ----------------------------
