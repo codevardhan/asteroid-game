@@ -322,6 +322,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.last_spawns = []
         self.dt = 0.016
 
+        self.bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
+        self.num_of_buckets_x = SCREEN_WIDTH // self.bucket_size
+        self.num_of_buckets_y = SCREEN_HEIGHT // self.bucket_size
         self.max_steps = MAX_STEPS  # you can override in config
 
         # RLlib requires specifying the spaces
@@ -439,7 +442,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.game_over = True
 
         # 7) Compute rewards
-        player_reward = float(destroyed) + float(self.collected)
+        player_reward = float(destroyed) * 0.3 + float(self.collected) * 0.3 + self._compute_player_reward()
         asteroid_reward = self._compute_fun_reward()
 
         # 8) Set termination flags (using new Gymnasium API style)
@@ -467,7 +470,33 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         pygame.quit()
 
     def _compute_player_reward(self):
-        return
+        reward = 0
+        p_lives = self.player.player_lives
+        #ensures player should be able to get life powerups when needed to survive, too little or many will makes game too easy or too hard
+        if p_lives == 1:
+            reward -= 0.2
+        elif p_lives > 2 and p_lives < 5:
+            reward += 0.3
+        else:
+            reward -= 0.4
+        
+        num_active_effects = len(self.player.active_effects)
+        if num_active_effects == 0:
+            reward += 0.1
+        elif num_active_effects >= 1 and num_active_effects < 4:
+            reward += 0.15
+        else:
+            reward -= 0.1
+
+        if self.collected == 0:
+            reward -= 0.3
+        elif self.collected >= 1 and self.collected < 3:
+            reward += 0.15
+        elif self.collected >= 3 and self.collected < 6:
+            reward += 0.2
+        else:
+            reward -= 0.2
+        return reward
     # ----------------------------
     #   Koster-inspired "fun" reward
     # ----------------------------
@@ -492,6 +521,23 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         # penalty if too many
         if len(self.asteroids) > MAX_ASTEROIDS_ONSCREEN:
             reward -= 0.1 * (len(self.asteroids) - MAX_ASTEROIDS_ONSCREEN)
+
+        px, py = self.player.position.x, self.player.position.y
+        player_bucket_x = px // self.bucket_size
+        player_bucket_y = py // self.bucket_size
+        #checking # of asteroids in player bucket space
+        asteroids_in_bucket = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x and
+                                        a.position.y // self.bucket_size == player_bucket_y))
+        if asteroids_in_bucket > 3:
+            reward -= 0.2 * asteroids_in_bucket
+        if asteroids_in_bucket == 0:
+            reward += 0.15
+        #checking if lots of asteroids in one area of the game
+        cluster_threshold = 4
+        nearby_asteroids = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x or
+                                        a.position.y // self.bucket_size == player_bucket_y))
+        if nearby_asteroids > cluster_threshold:
+            reward -= 0.3 * nearby_asteroids
         # step cost
         reward -= 0.01
         return reward
@@ -595,9 +641,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 self.updatables.add(powerup)
 
     def _get_surrounding_buckets(self):
-        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
-        num_of_buckets_x = SCREEN_WIDTH // bucket_size
-        num_of_buckets_y = SCREEN_HEIGHT // bucket_size
         px, py = self.player.position.x, self.player.position.y
         player_bucket = self._get_player_bucket()
         surrounding_buckets = [
@@ -608,7 +651,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         valid_in_game_bounds_bucket = [
             (bx,by)
             for bx,by in surrounding_buckets
-            if 0<=bx<num_of_buckets_x and 0<=by < num_of_buckets_y
+            if 0<=bx<self.num_of_buckets_x and 0<=by < self.num_of_buckets_y
         ]
         asteroid_buckets = self._update_asteroids_buckets()
         surrounding_asteroids_count = sum(len(asteroid_buckets.get(bucket, [])) for bucket in valid_in_game_bounds_bucket)
@@ -625,18 +668,16 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     #SCREEN_WIDTH, SCREEN_HEIGHT
     def _get_player_bucket(self):
         px, py = self.player.position.x, self.player.position.y
-        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
-        bucket_x = px // bucket_size
-        bucket_y = py // bucket_size
+        bucket_x = px // self.bucket_size
+        bucket_y = py // self.bucket_size
         return bucket_x,bucket_y
     
     def _get_asteroid_bucket(self,asteroid):
         ax, ay = asteroid.position.x, asteroid.position.y
-        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
-        bucket_x = ax // bucket_size
-        bucket_y = ay // bucket_size
-        bucket_x = max(0, min(bucket_x, SCREEN_WIDTH // bucket_size - 1))
-        bucket_y = max(0, min(bucket_y, SCREEN_HEIGHT // bucket_size - 1))
+        bucket_x = ax // self.bucket_size
+        bucket_y = ay // self.bucket_size
+        bucket_x = max(0, min(bucket_x, self.num_of_buckets_x - 1))
+        bucket_y = max(0, min(bucket_y, self.num_of_buckets_y - 1))
 
         return bucket_x, bucket_y
     # ----------------------------
