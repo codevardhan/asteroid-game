@@ -3,8 +3,8 @@ import sys
 sys.path.insert(0, "player_agents")
 sys.path.insert(0, "asteroid_agents")
 
-from human import HumanPlayerAgent
-from random_asteroids import RandomAsteroidAgent
+#from human import HumanPlayerAgent
+#from random_asteroids import RandomAsteroidAgent
 import random
 import pygame
 import pygame.freetype
@@ -136,8 +136,8 @@ class Player(CircleShape):
     def draw(self, screen):
         pygame.draw.polygon(screen, (255,255,255), self.triangle(), 2)
 
-    def rotate(self, dt):
-        self.rotation += self.player_turn_speed * dt
+    def rotate(self, dt, direction=1.0):
+        self.rotation += PLAYER_TURN_SPEED * dt * direction
 
     def update(self, dt):
         """
@@ -149,6 +149,10 @@ class Player(CircleShape):
         # we’ll do it there. This function can remain an empty stub if the env
         # calls movement/rotation directly.
         pass
+
+    def move(self, dt, forward_factor=1.0):
+        forward = pygame.Vector2(0, 1).rotate(self.rotation)
+        self.position += forward * PLAYER_SPEED * dt * forward_factor
 
     def update_effects(self):
         current_time = pygame.time.get_ticks()
@@ -167,7 +171,11 @@ class Player(CircleShape):
                 self.player_powerups['shot_power_up']-=1
                 self.player_shoot_speed -= 100
                 self.player_shoot_cooldown += 0.05
-            
+    def shoot(self):
+        shot = Shot(self.position.x, self.position.y, SHOT_RADIUS)
+        shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+        shot.ttl = 2.0  # time-to-live for shot
+        return shot
 class PowerUp(CircleShape):
     def __init__(self, x, y, radius,type,ttl=5000):
         super().__init__(x,y,radius)
@@ -342,12 +350,12 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.possible_agents = ["player", "asteroid"]
         self.agents = self.possible_agents.copy()
 
-    def reset(self, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):
         # Clear old state
         self.asteroids.empty()
         self.shots.empty()
         self.updatables.empty()
-        self.powerups.empty(0)
+        self.powerups.empty()
         # Create player at center
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.updatables.add(self.player)
@@ -555,9 +563,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         
         elif a == 1:  # Shoot
             new_shot = self.player.shoot()  # Shoot a projectile
-        if new_shot:
-            self.shots.add(new_shot)  # Add shot to the game
-            self.updatables.add(new_shot)  # Add shot to the updatable objects
+            if new_shot:
+                self.shots.add(new_shot)  # Add shot to the game
+                self.updatables.add(new_shot)  # Add shot to the updatable objects
     
         elif a == 2:  # Move forward and turn right
             self.player.rotate(self.dt, 1)  # Turn right
