@@ -469,6 +469,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     # ----------------------------
     #   Koster-inspired "fun" reward
     # ----------------------------
+    #Adding reward system for powerups
     def _compute_fun_reward(self):
         reward = 0.0
         # 1) mastery
@@ -590,26 +591,118 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 self.action = "PowerUp_Spawned_Life"
                 self.powerups.add(powerup)
                 self.updatables.add(powerup)
-        
+                
+    def _update_asteroids_buckets(self):
+        asteroid_buckets = {}
+        for asteroid in self.asteroids:
+            bx,by = self._get_asteroid_bucket(asteroid)
+            if (bx,by) not in asteroid_buckets:
+                asteroid_buckets[(bx, by)] = []
+            asteroid_buckets[(bx, by)].append(asteroid) 
+        return asteroid_buckets  
+    #SCREEN_WIDTH, SCREEN_HEIGHT
+    def _get_player_bucket(self):
+        px, py = self.player.position.x, self.player.position.y
+        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
+        bucket_x = px // bucket_size
+        bucket_y = py // bucket_size
+        return bucket_x,bucket_y
     
+    def _get_asteroid_bucket(self,asteroid):
+        ax, ay = asteroid.position.x, asteroid.position.y
+        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
+        bucket_x = ax // bucket_size
+        bucket_y = ax // bucket_size
+        bucket_x = max(0, min(bucket_x, SCREEN_WIDTH // 8 - 1))
+        bucket_y = max(0, min(bucket_y, SCREEN_HEIGHT // 6 - 1))
+
+        return bucket_x, bucket_y
     # ----------------------------
     #   Observations
     # ----------------------------
     def _get_player_obs(self):
         """
-        Return a 3D vector: [player_x, player_y, #asteroids].
+        Return a 3D vector: [player_x, player_y, #asteroids, powerups collected,player lives, # of active powerups].
         """
+                #player lives bucket
+        
+        p_lives = self.player.player_lives
+        if p_lives == 1:
+            p_lives_bucket = 0
+        elif p_lives > 2 and p_lives < 5:
+            p_lives_bucket = 1
+        else:
+            p_lives_bucket = 2
+
+        num_asts = len(self.asteroids)
+        if num_asts < 10:
+            num_asts_bucket = 0
+        elif num_asts >= 10 and num_asts < 20:
+            num_asts_bucket = 1
+        elif num_asts >= 20 and num_asts < 40:
+            num_asts_bucket = 2
+        elif num_asts >= 40:
+            num_asts_bucket = 3
+        
+        num_active_effects = len(self.player.active_effects)
+        if num_active_effects == 0:
+            num_act_effects_bucket = 0
+        elif num_active_effects >= 1 and num_active_effects < 4:
+            num_act_effects_bucket = 1
+        else:
+            num_act_effects_bucket = 2
+
+        if self.collected == 0:
+            collected_buckets = 0
+        elif self.collected >= 1 and self.collected < 3:
+            collected_buckets = 1
+        elif self.collected >= 3 and self.collected < 6:
+            collected_buckets = 2
+        else:
+            collected_buckets = 3
+
         return np.array(
-            [self.player.position.x, self.player.position.y, len(self.asteroids)],
+            [self.player.position.x, self.player.position.y,self.player.velocity.x,self.player.velocity.x,
+              num_asts_bucket,collected_buckets,p_lives_bucket,num_act_effects_bucket],
             dtype=np.float32,
         )
 
     def _get_asteroid_obs(self):
         """
-        Return a 3D vector: [#asteroids, player_x, player_y].
+        Return a 3D vector: [#asteroids, player_x, player_y, # of powerups on board].
         """
+        num_asts = len(self.asteroids)
+        if num_asts < 10:
+            num_asts_bucket = 0
+        elif num_asts >= 10 and num_asts < 20:
+            num_asts_bucket = 1
+        elif num_asts >= 20 and num_asts < 40:
+            num_asts_bucket = 2
+        elif num_asts >= 40:
+            num_asts_bucket = 3
+
+        px, py = self.player.position.x, self.player.position.y
+
+        num_pup = len(self.powerups)
+        if num_pup < 3:
+            num_pup_bucket = 0
+        elif num_pup >=3 and num_pup < 5:
+            num_pup_bucket = 1
+        elif num_pup >=5:
+            num_pup_bucket = 2
+
+        #bucket for near miss count
+        if self.near_miss_count < 5:
+            near_miss_bucket = 0  # Low risk
+        elif self.near_miss_count < 15:
+            near_miss_bucket = 1  # Medium risk
+        else:
+            near_miss_bucket = 2 
+
         return np.array(
-            [len(self.asteroids), self.player.position.x, self.player.position.y],
+            [num_asts_bucket, px,
+              py,self.player.velocity.x,self.player.velocity.x
+              ,num_pup_bucket],
             dtype=np.float32,
         )
 
