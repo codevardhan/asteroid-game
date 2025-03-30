@@ -466,6 +466,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     def close(self):
         pygame.quit()
 
+    def _compute_player_reward(self):
+        return
     # ----------------------------
     #   Koster-inspired "fun" reward
     # ----------------------------
@@ -591,7 +593,27 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 self.action = "PowerUp_Spawned_Life"
                 self.powerups.add(powerup)
                 self.updatables.add(powerup)
-                
+
+    def _get_surrounding_buckets(self):
+        bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
+        num_of_buckets_x = SCREEN_WIDTH // bucket_size
+        num_of_buckets_y = SCREEN_HEIGHT // bucket_size
+        px, py = self.player.position.x, self.player.position.y
+        player_bucket = self._get_player_bucket()
+        surrounding_buckets = [
+            (player_bucket[0] + dx,player_bucket[1] + dy)
+            for dx in [-1,0,1]
+            for dy in [-1,0,1]
+        ]         
+        valid_in_game_bounds_bucket = [
+            (bx,by)
+            for bx,by in surrounding_buckets
+            if 0<=bx<num_of_buckets_x and 0<=by < num_of_buckets_y
+        ]
+        asteroid_buckets = self._update_asteroids_buckets()
+        surrounding_asteroids_count = sum(len(asteroid_buckets.get(bucket, [])) for bucket in valid_in_game_bounds_bucket)
+        return surrounding_asteroids_count
+    
     def _update_asteroids_buckets(self):
         asteroid_buckets = {}
         for asteroid in self.asteroids:
@@ -612,9 +634,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         ax, ay = asteroid.position.x, asteroid.position.y
         bucket_size = min(SCREEN_WIDTH // 8, SCREEN_HEIGHT // 6)
         bucket_x = ax // bucket_size
-        bucket_y = ax // bucket_size
-        bucket_x = max(0, min(bucket_x, SCREEN_WIDTH // 8 - 1))
-        bucket_y = max(0, min(bucket_y, SCREEN_HEIGHT // 6 - 1))
+        bucket_y = ay // bucket_size
+        bucket_x = max(0, min(bucket_x, SCREEN_WIDTH // bucket_size - 1))
+        bucket_y = max(0, min(bucket_y, SCREEN_HEIGHT // bucket_size - 1))
 
         return bucket_x, bucket_y
     # ----------------------------
@@ -622,7 +644,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     # ----------------------------
     def _get_player_obs(self):
         """
-        Return a 3D vector: [player_x, player_y, #asteroids, powerups collected,player lives, # of active powerups].
+        vector of buckets of player observations
         """
                 #player lives bucket
         
@@ -661,15 +683,16 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         else:
             collected_buckets = 3
 
+        surrounding_asteroids_count = self._get_surrounding_buckets(self)
         return np.array(
             [self.player.position.x, self.player.position.y,self.player.velocity.x,self.player.velocity.x,
-              num_asts_bucket,collected_buckets,p_lives_bucket,num_act_effects_bucket],
+              num_asts_bucket,collected_buckets,p_lives_bucket,num_act_effects_bucket,surrounding_asteroids_count],
             dtype=np.float32,
         )
 
     def _get_asteroid_obs(self):
         """
-        Return a 3D vector: [#asteroids, player_x, player_y, # of powerups on board].
+        Using buckets for asteroid and powerup observations
         """
         num_asts = len(self.asteroids)
         if num_asts < 10:
@@ -698,11 +721,11 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             near_miss_bucket = 1  # Medium risk
         else:
             near_miss_bucket = 2 
-
+        surrounding_asteroids_count = self._get_surrounding_buckets(self)
         return np.array(
             [num_asts_bucket, px,
               py,self.player.velocity.x,self.player.velocity.x
-              ,num_pup_bucket],
+              ,num_pup_bucket,near_miss_bucket,surrounding_asteroids_count],
             dtype=np.float32,
         )
 
