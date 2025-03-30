@@ -330,10 +330,10 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         # RLlib requires specifying the spaces
         # (could be gym.spaces.Box, Discrete, etc.)
         self.observation_space_player = Box(
-            low=-1e5, high=1e5, shape=(5,), dtype=np.float32
+            low=-1e5, high=1e5, shape=(9,), dtype=np.float32
             )
         self.observation_space_asteroid = Box(
-        low=-1e5, high=1e5, shape=(3,), dtype=np.float32
+        low=-1e5, high=1e5, shape=(8,), dtype=np.float32
         )
 
 # Updated action spaces
@@ -619,7 +619,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             life_weight /= total
             shot_weight /= total
             speed_weight /= total
-            powerup_type = random.choice(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight])
+            powerup_type = random.choice(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)[0]
             vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
             if powerup_type == "shot":
                 powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
@@ -724,11 +724,12 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         else:
             collected_buckets = 3
 
-        surrounding_asteroids_count = self._get_surrounding_buckets(self)
+        surrounding_asteroids_count = self._get_surrounding_buckets()
         return np.array(
-            [self.player.position.x, self.player.position.y,self.player.velocity.x,self.player.velocity.x,
+            [self.player.position.x, self.player.position.y,self.player.velocity.x,self.player.velocity.y,
               num_asts_bucket,collected_buckets,p_lives_bucket,num_act_effects_bucket,surrounding_asteroids_count],
             dtype=np.float32,
+        #9
         )
 
     def _get_asteroid_obs(self):
@@ -762,12 +763,13 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             near_miss_bucket = 1  # Medium risk
         else:
             near_miss_bucket = 2 
-        surrounding_asteroids_count = self._get_surrounding_buckets(self)
+        surrounding_asteroids_count = self._get_surrounding_buckets()
         return np.array(
             [num_asts_bucket, px,
               py,self.player.velocity.x,self.player.velocity.x
               ,num_pup_bucket,near_miss_bucket,surrounding_asteroids_count],
             dtype=np.float32,
+            #8
         )
 
     @property
