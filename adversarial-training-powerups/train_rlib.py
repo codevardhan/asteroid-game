@@ -68,7 +68,7 @@ if __name__ == "__main__":
         gamma=0.99,
         lr=1e-3,
     )
-
+    config.rollout_fragment_length = 500
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
     config.num_env_runners = 1
@@ -79,9 +79,9 @@ if __name__ == "__main__":
     # Now run with Ray Tune’s Tuner
     tuner = tune.Tuner(
         "PPO",
-        run_config=tune.RunConfig(
-            stop={"episodes_total": 500},  # stop after 500 episodes, for example
-        ),
+    run_config=tune.RunConfig(
+    stop={"training_iteration": 500}  # Stops after 500 training iterations
+    ),
         param_space=config.to_dict(),
     )
     results = tuner.fit()

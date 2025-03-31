@@ -367,7 +367,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.last_spawns.clear()
 
         # Return the initial observation and an empty info dict
-        obs = {"player": self._get_player_obs(), "asteroid": self._get_asteroid_obs()}
+        obs = {"player": self._get_player_obs().astype(np.float32) if self._get_player_obs().dtype != np.float32 else self._get_player_obs(),
+                "asteroid": self._get_asteroid_obs().astype(np.float32) if self._get_asteroid_obs().dtype != np.float32 else self._get_asteroid_obs()}
         return obs, {}
 
     def step(self, action_dict):
@@ -627,7 +628,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             life_weight /= total
             shot_weight /= total
             speed_weight /= total
-            powerup_type = random.choice(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)[0]
+            powerup_type = random.choices(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)
             vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
             if powerup_type == "shot":
                 powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
@@ -782,7 +783,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
 
     @property
     def observation_space(self):
-        return Dict(
+        return gym.spaces.Dict(
             {
                 "player": self.observation_space_player,
                 "asteroid": self.observation_space_asteroid,
@@ -791,6 +792,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
 
     @property
     def action_space(self):
-        return Dict(
+        return gym.spaces.Dict(
             {"player": self.action_space_player, "asteroid": self.action_space_asteroid}
         )
