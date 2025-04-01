@@ -1,14 +1,17 @@
 import ray
+import os
+import torch
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
-
+from ray.rllib.algorithms.ppo import PPO
 from environment import AsteroidsRLLibEnv
 import matplotlib.pyplot as plt
 import pandas as pd
 
 if __name__ == "__main__":
     ray.init()
-
+    print(torch.backends.mps.is_available())  # Should print True
+    print(torch.backends.mps.is_built())  # Should print True
     def policy_mapping_fn(agent_id, *args, **kwargs):
         # agent_id is either "player" or "asteroid"
         return f"{agent_id}_policy"
@@ -26,7 +29,7 @@ if __name__ == "__main__":
     config = config.framework("torch")
 
     # 3) Resources (GPUs etc.)
-    config = config.resources(num_gpus=1)
+    config = config.resources(num_gpus=0)
 
     # 4) Multi-agent setup
     env_example = AsteroidsRLLibEnv({"render_mode": False})
@@ -86,26 +89,31 @@ if __name__ == "__main__":
     )
     results = tuner.fit()
     print("Training completed!")
+    latest_result = results.get_best_result()
+    checkpoint_dir = latest_result.checkpoint.path
+    trained_algo = PPO.from_checkpoint(checkpoint_dir)
+    save_path = os.path.join(checkpoint_dir, "trained_model")
+    trained_algo.save(save_path)
+    print(f"Model saved at: {save_path}")
+    # # Assuming 'results' is the Tune ExperimentAnalysis object returned by tuner.fit()
+    # df = results.get_dataframe()
 
-    # Assuming 'results' is the Tune ExperimentAnalysis object returned by tuner.fit()
-    df = results.get_dataframe()
+    # # Inspect column names to see what metrics were logged.
+    # print(df.columns)
 
-    # Inspect column names to see what metrics were logged.
-    print(df.columns)
+    # # Plot overall mean episode reward
+    # plt.figure(figsize=(10,6))
+    # plt.plot(df['episode_reward_mean'], label='Mean Episode Reward')
 
-    # Plot overall mean episode reward
-    plt.figure(figsize=(10,6))
-    plt.plot(df['episode_reward_mean'], label='Mean Episode Reward')
+    # # If your multi-agent metrics are logged separately, you might have columns like:
+    # # 'policy_reward_player_mean', 'policy_reward_asteroid_mean'
+    # if 'policy_reward_player_mean' in df.columns:
+    #     plt.plot(df['policy_reward_player_mean'], label='Player Mean Reward')
+    # if 'policy_reward_asteroid_mean' in df.columns:
+    #     plt.plot(df['policy_reward_asteroid_mean'], label='Asteroid Mean Reward')
 
-    # If your multi-agent metrics are logged separately, you might have columns like:
-    # 'policy_reward_player_mean', 'policy_reward_asteroid_mean'
-    if 'policy_reward_player_mean' in df.columns:
-        plt.plot(df['policy_reward_player_mean'], label='Player Mean Reward')
-    if 'policy_reward_asteroid_mean' in df.columns:
-        plt.plot(df['policy_reward_asteroid_mean'], label='Asteroid Mean Reward')
-
-    plt.xlabel('Iteration')
-    plt.ylabel('Reward')
-    plt.title('Training Progress')
-    plt.legend()
-    plt.show()
+    # plt.xlabel('Iteration')
+    # plt.ylabel('Reward')
+    # plt.title('Training Progress')
+    # plt.legend()
+    # plt.show()
