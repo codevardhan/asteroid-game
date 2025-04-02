@@ -318,7 +318,10 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.shots = pygame.sprite.Group()
         self.powerups = pygame.sprite.Group()
         self.updatables = pygame.sprite.Group()
-
+        self.drawables = pygame.sprite.Group()
+        Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
+        Shot.containers = (self.shots, self.updatables, self.drawables)
+        PowerUp.containers = (self.powerups,self.updatables,self.drawables)
         self.score = 0
         self.lives = 1
         self.collected = 0
@@ -359,7 +362,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         # Create player at center
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
         self.updatables.add(self.player)
-
+        self.drawables.add(self.player)
         self.score = 0
         self.game_over = False
         self.steps_elapsed = 0
@@ -404,6 +407,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         if not self.game_over:
             self._apply_asteroid_action(asteroid_act)
 
+        for upd in self.updatables:
+            upd.update(self.dt)
         # 3) Update sprites
         for s in list(self.updatables):
             if hasattr(s, "update"):
@@ -462,14 +467,18 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         obs_dict = {"player": self._get_player_obs(), "asteroid": self._get_asteroid_obs()}
         rew_dict = {"player": player_reward, "asteroid": asteroid_reward}
         info_dict = {}
-
+        if self.render_mode == True:
+            self.render()
+        if self.game_over == True:
+            self.reset()
         return obs_dict, rew_dict, terminated, truncated, info_dict
 
     def render(self, mode="human"):
         if not self.render_mode or not self.screen:
             return
         self.screen.fill((0, 0, 0))
-        # draw any sprites, text, etc.
+        for d in self.drawables:
+            d.draw(self.screen)
         self.font.render_to(
             self.screen, (10, 10), f"Score: {self.score}", (255, 255, 255)
         )
@@ -505,6 +514,16 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             reward += 0.2
         else:
             reward -= 0.2
+        px, py = self.player.position.x, self.player.position.y
+        player_bucket_x = px // self.bucket_size
+        player_bucket_y = py // self.bucket_size
+        #checking # of asteroids in player bucket space
+        asteroids_in_bucket = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x and
+                                        a.position.y // self.bucket_size == player_bucket_y))
+        if asteroids_in_bucket > 3:
+            reward -= 0.2 * asteroids_in_bucket
+        if asteroids_in_bucket == 0:
+            reward += 0.15
         return reward
     # ----------------------------
     #   Koster-inspired "fun" reward
@@ -604,9 +623,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     # Create the asteroid (you should have an Asteroid class to instantiate)
         asteroid = Asteroid(pos.x, pos.y, radius)
         asteroid.velocity = vel
-    
-        self.asteroids.add(asteroid)
-        self.updatables.add(asteroid)
 
         self.last_spawns.append((radius, speed, angle))
         if len(self.last_spawns) > 20:
@@ -635,19 +651,16 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 powerup.velocity = vector3
                 self.action = "PowerUp_Spawned_Shot"
                 self.powerups.add(powerup)
-                self.updatables.add(powerup)
             elif powerup_type == "speed":
                 powerup = SpeedPowerUp(asteroid.position.x,asteroid.position.y,20)
                 powerup.velocity = vector3
                 self.action = "PowerUp_Spawned_Speed"
                 self.powerups.add(powerup)
-                self.updatables.add(powerup)
             elif powerup_type == "life":
                 powerup = LifePowerUp(asteroid.position.x,asteroid.position.y,5)
                 powerup.velocity = vector3
                 self.action = "PowerUp_Spawned_Life"
                 self.powerups.add(powerup)
-                self.updatables.add(powerup)
 
     def _get_surrounding_buckets(self):
         px, py = self.player.position.x, self.player.position.y

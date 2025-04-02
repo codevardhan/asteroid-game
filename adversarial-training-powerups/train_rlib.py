@@ -32,8 +32,7 @@ if __name__ == "__main__":
     config = config.resources(num_gpus=0)
 
     # 4) Multi-agent setup
-    env_example = AsteroidsRLLibEnv({"render_mode": False})
-
+    env_example = AsteroidsRLLibEnv({"render_mode": True})
     config = config.multi_agent(
         policies={
             "player_policy": (
