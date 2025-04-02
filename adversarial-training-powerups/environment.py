@@ -303,7 +303,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             config = {}
 
         # Rendering
-        self.render_mode = config.get("render_mode", False)
+        self.render_mode = True
         pygame.init()
         self.clock = pygame.time.Clock()
         if self.render_mode:
