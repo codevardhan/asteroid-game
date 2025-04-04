@@ -2,7 +2,7 @@ import sys
 
 sys.path.insert(0, "player_agents")
 sys.path.insert(0, "asteroid_agents")
-EFFECT_DURATION = 5000
+
 # from human import HumanPlayerAgent
 # from random_asteroids import RandomAsteroidAgent
 import random
@@ -129,11 +129,9 @@ class Player(CircleShape):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
         self.timer = 0
-        self.last_shot_time = 0
-        self.current_action = 0  # player starts in middle still
-        self.player_shoot_cooldown = 0.50
         self.current_action = 0
 
+        self.player_shoot_cooldown = 0.4
         self.time_since_last_shot = 0.0
 
         self.player_speed = PLAYER_SPEED
@@ -164,41 +162,7 @@ class Player(CircleShape):
         self.rotation += PLAYER_TURN_SPEED * dt * direction
 
     def update(self, dt):
-        """
-        By default, we do nothing here. If using HumanPlayerAgent,
-        we'll check keys in a separate step method. If using a policy agent,
-        that agent will explicitly set commands for rotate/move.
-        """
-        # If we want to handle the default "human" logic inside the environment,
-        # we’ll do it there. This function can remain an empty stub if the env
-        # calls movement/rotation directly.
-        # keys = pygame.key.get_pressed()
-        # self.current_action = 0
-        # #w,a,s,d and arrow keys
-        # if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        #     invert_dt = dt * -1
-        #     self.rotate(invert_dt)
-        #     self.current_action = 1
-
-        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        #     self.rotate(dt)
-        #     self.current_action = 2
-
-        # if keys[pygame.K_w] or keys[pygame.K_UP]:
-        #     self.move(dt)
-        #     self.current_action = 3
-
-        # if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        #     self.move(-dt)
-        #     self.current_action = 4
-
-        # if keys[pygame.K_SPACE]:
-        #     if self.timer <= 0:
-        #         self.shoot()
-        #         self.timer = self.player_shoot_cooldown
-        #     self.current_action = 5
-
-        # self.timer -= dt
+        self.time_since_last_shot += dt
         pass
 
     def can_shoot(self):
@@ -234,15 +198,16 @@ class Player(CircleShape):
                 self.player_shoot_cooldown += 0.05
 
     def shoot(self):
-        now = pygame.time.get_ticks() / 1000
-        if now - self.last_shot_time >= self.player_shoot_cooldown:
-            self.last_shot_time = now
+        if self.can_shoot():
             shot = Shot(self.position.x, self.position.y, SHOT_RADIUS)
             shot.velocity = (
-                pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+                pygame.Vector2(0, 1).rotate(self.rotation) * self.player_shoot_speed
             )
-            shot.ttl = 2.0  # time-to-live for shot
+            shot.ttl = 2.0
+            self.time_since_last_shot = 0.0
             return shot
+        else:
+            return None
 
 
 class PowerUp(CircleShape):
@@ -420,8 +385,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.collected = 0
         self.game_over = False
         self.steps_elapsed = 0
-        self.last_asteroid_spawned = True
-        self.last_powerup_spawned = True
+
         self.last_asteroid_destroyed = None
         self.near_miss_count = 0
         self.last_spawns = []
@@ -436,8 +400,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         #     low=-1e5, high=1e5, shape=(9,), dtype=np.float32
         # )
         self.observation_space_player = Box(
-            low=-1e5, high=1e5, shape=(9,), dtype=np.float32
+            low=-1e5, high=1e5, shape=(11,), dtype=np.float32
         )
+
         self.observation_space_asteroid = Box(
             low=-1e5, high=1e5, shape=(9,), dtype=np.float32
         )
@@ -458,15 +423,11 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         # Clear old state
         self.asteroids.empty()
         self.shots.empty()
-        self.powerups.empty()
         self.updatables.empty()
         self.drawables.empty()
-
-        # Create player at center
+        self.powerups.empty()
+        # Create player at centert
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-        Shot.containers = (self.shots, self.updatables, self.drawables)
-        Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
-        PowerUp.containers = (self.powerups, self.updatables, self.drawables)
         self.updatables.add(self.player)
         self.drawables.add(self.player)
         self.score = 0
@@ -512,13 +473,12 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.steps_elapsed += 1
         else:
             self.dt = 0
-        prev_velocity = self.player.velocity.copy()
+
         # 1) Apply the player action
         player_act = action_dict.get("player", 0)
         if not self.game_over:
             self._apply_player_action(player_act)
-        velocity_diff = self.player.velocity - prev_velocity
-        velocity_magnitude = velocity_diff.length()
+
         # 2) Apply the asteroid agent action
         asteroid_act = action_dict.get("asteroid", 0)
         if not self.game_over:
@@ -551,9 +511,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             for shot in list(self.shots):
                 if asteroid.collision_check(shot):
                     self.last_asteroid_destroyed = asteroid
-                    # print(self.last_asteroid_destroyed)
                     shot.kill()
-                    asteroid.split()
+                    asteroid.kill()
                     destroyed += 1
                     if self.powerup_requests > 0:
                         self.spawn_from_asteroid(self.last_asteroid_destroyed)
@@ -615,9 +574,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     def render(self, mode="human"):
         if not self.render_mode or not self.screen:
             return
-        # for powerup in self.powerups:
-        #     powerup.update(self.dt)
-        #     powerup.draw(self.screen)
         self.screen.fill((0, 0, 0))
         for d in self.drawables:
             d.draw(self.screen)
@@ -649,18 +605,11 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             reward -= 5.0 + 5.0 * early_factor
         # boredom
         if len(self.asteroids) < 1:
-            reward -= 0.2
+            reward -= 0.05
         # penalty if too many
         if len(self.asteroids) > MAX_ASTEROIDS_ONSCREEN:
             reward -= 0.1 * (len(self.asteroids) - MAX_ASTEROIDS_ONSCREEN)
 
-        if self.last_asteroid_spawned:
-            reward += 0.2
-            self.last_asteroid_spawned = False
-
-        if self.last_powerup_spawned:
-            reward += 0.1
-            self.last_powerup_spawned = False
         px, py = self.player.position.x, self.player.position.y
         player_bucket_x = px // self.bucket_size
         player_bucket_y = py // self.bucket_size
@@ -675,7 +624,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         )
         if asteroids_in_bucket > 3:
             reward -= 0.2 * asteroids_in_bucket
-        if asteroids_in_bucket <= 3:
+        if asteroids_in_bucket == 0:
             reward += 0.15
         # checking if lots of asteroids in one area of the game
         cluster_threshold = 4
@@ -689,7 +638,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         )
         if nearby_asteroids > cluster_threshold:
             reward -= 0.3 * nearby_asteroids
-
         # step cost
         reward -= 0.01
         return reward
@@ -699,7 +647,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     # ----------------------------
     def _apply_player_action(self, a):
         """
-        5 possible player actions
+        4 possible player actions
         """
         if a == 0:  # Move forward and turn left
             self.player.rotate(self.dt, -1)  # Turn left
@@ -727,34 +675,35 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         """
         if a == 0:
             return
-        if a == 2 and self.last_asteroid_destroyed == None:
-            return
-        if a == 2 and self.last_asteroid_destroyed != None:
-            self.spawn_from_asteroid(self.last_asteroid_destroyed)
-            self.last_asteroid_destroyed = None
-            self.last_asteroid_spawned = True
-            return
+        elif a == 2:
+            self.powerup_requests += 1
+        else:
+            edge = random.choice(ASTEROID_EDGES)
+            radius = random.choice(POSSIBLE_RADII)
+            speed = random.choice(POSSIBLE_SPEEDS)
+            angle = random.choice(POSSIBLE_ANGLES)
 
-        self.last_asteroid_spawned = True
-        edge = random.choice(ASTEROID_EDGES)
-        radius = random.choice(POSSIBLE_RADII)
-        speed = random.choice(POSSIBLE_SPEEDS)
-        angle = random.choice(POSSIBLE_ANGLES)
+            # Generate position and velocity
+            frac = (
+                random.random()
+            )  # This will be used to calculate the spawn position along the edge
+            pos = edge[1](frac)  # Get position from edge definition (lambda function)
+            direction = edge[0].rotate(angle)  # Rotate direction vector by angle
+            vel = direction * speed  # Compute velocity vector
 
-        # Create the asteroid (you should have an Asteroid class to instantiate)
-        asteroid = Asteroid(pos.x, pos.y, radius)
-        asteroid.velocity = vel
+            # Create the asteroid (you should have an Asteroid class to instantiate)
+            asteroid = Asteroid(pos.x, pos.y, radius)
+            asteroid.velocity = vel
 
-        self.last_spawns.append((radius, speed, angle))
-        if len(self.last_spawns) > 20:
-            self.last_spawns.pop(0)
+            self.last_spawns.append((radius, speed, angle))
+            if len(self.last_spawns) > 20:
+                self.last_spawns.pop(0)
 
     def spawn_from_asteroid(self, asteroid):
         life_weight = 0.2
         shot_weight = 0.3
         speed_weight = 0.5
 
-    def spawn_from_asteroid(self, asteroid):
         if self.player.player_lives < 2:
             life_weight += 0.4
         if len(self.asteroids) > 10:
@@ -769,30 +718,23 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             ["speed", "shot", "life"],
             weights=[speed_weight, shot_weight, life_weight],
             k=1,
-        )[0]
-        # print(powerup_type)
+        )
         vector3 = pygame.math.Vector2.rotate(asteroid.velocity, random.uniform(20, 50))
         if powerup_type == "shot":
             powerup = ShotPowerUp(asteroid.position.x, asteroid.position.y, 2)
             powerup.velocity = vector3
-            # self.powerups.add(powerup)
-            # self.drawables.add(powerup)
-            # self.updatables.add(powerup)
             self.action = "PowerUp_Spawned_Shot"
+            self.powerups.add(powerup)
         elif powerup_type == "speed":
             powerup = SpeedPowerUp(asteroid.position.x, asteroid.position.y, 20)
             powerup.velocity = vector3
-            # self.powerups.add(powerup)
-            # self.drawables.add(powerup)
-            # self.updatables.add(powerup)
             self.action = "PowerUp_Spawned_Speed"
+            self.powerups.add(powerup)
         elif powerup_type == "life":
             powerup = LifePowerUp(asteroid.position.x, asteroid.position.y, 5)
             powerup.velocity = vector3
-            self.powerups.add(powerup)
-            self.drawables.add(powerup)
-            self.updatables.add(powerup)
             self.action = "PowerUp_Spawned_Life"
+            self.powerups.add(powerup)
 
     def _get_surrounding_buckets(self):
         px, py = self.player.position.x, self.player.position.y
@@ -948,23 +890,13 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             [
                 num_asts_bucket,
                 px,
-                (
-                    float(
-                        np.mean(
-                            [a.velocity.x for a in self.asteroids]
-                            if self.asteroids
-                            else 0
-                        )
-                    )
-                    if self.asteroids
-                    else 0.0
-                ),
                 py,
                 self.player.velocity.x,
                 self.player.velocity.x,
                 num_pup_bucket,
                 near_miss_bucket,
                 surrounding_asteroids_count,
+                self.score,
             ],
             dtype=np.float32,
         )
