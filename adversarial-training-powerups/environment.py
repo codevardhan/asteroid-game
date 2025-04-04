@@ -2,7 +2,7 @@ import sys
 
 sys.path.insert(0, "player_agents")
 sys.path.insert(0, "asteroid_agents")
-
+EFFECT_DURATION = 5000
 #from human import HumanPlayerAgent
 #from random_asteroids import RandomAsteroidAgent
 import random
@@ -115,8 +115,9 @@ class Player(CircleShape):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
         self.timer = 0
+        self.last_shot_time = 0
         self.current_action = 0 #player starts in middle still
-        self.player_shoot_cooldown = 0.4
+        self.player_shoot_cooldown = 0.50
         self.player_speed = PLAYER_SPEED
         self.player_shoot_speed = PLAYER_SHOOT_SPEED
         self.player_turn_speed = PLAYER_TURN_SPEED
@@ -172,10 +173,13 @@ class Player(CircleShape):
                 self.player_shoot_speed -= 100
                 self.player_shoot_cooldown += 0.05
     def shoot(self):
-        shot = Shot(self.position.x, self.position.y, SHOT_RADIUS)
-        shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
-        shot.ttl = 2.0  # time-to-live for shot
-        return shot
+        now = pygame.time.get_ticks() / 1000
+        if now - self.last_shot_time >= self.player_shoot_cooldown:
+            self.last_shot_time = now
+            shot = Shot(self.position.x, self.position.y, SHOT_RADIUS)
+            shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+            shot.ttl = 2.0  # time-to-live for shot
+            return shot
 class PowerUp(CircleShape):
     def __init__(self, x, y, radius,type,ttl=5000):
         super().__init__(x,y,radius)
@@ -344,7 +348,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             low=-1e5, high=1e5, shape=(9,), dtype=np.float32
             )
         self.observation_space_asteroid = Box(
-        low=-1e5, high=1e5, shape=(8,), dtype=np.float32
+        low=-1e5, high=1e5, shape=(9,), dtype=np.float32
         )
 
 # Updated action spaces
@@ -357,10 +361,15 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         # Clear old state
         self.asteroids.empty()
         self.shots.empty()
-        self.updatables.empty()
         self.powerups.empty()
+        self.updatables.empty()
+        self.drawables.empty()
+
         # Create player at center
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        Shot.containers = (self.shots, self.updatables, self.drawables)
+        Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
+        PowerUp.containers = (self.powerups, self.updatables, self.drawables)
         self.updatables.add(self.player)
         self.drawables.add(self.player)
         self.score = 0
@@ -433,8 +442,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             for shot in list(self.shots):
                 if asteroid.collision_check(shot):
                     self.last_asteroid_destroyed = asteroid
+                    print(self.last_asteroid_destroyed)
                     shot.kill()
-                    asteroid.kill()
+                    asteroid.split()
                     destroyed += 1
                     break
         for powerup in list(self.powerups):
@@ -476,6 +486,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     def render(self, mode="human"):
         if not self.render_mode or not self.screen:
             return
+        # for powerup in self.powerups:
+        #     powerup.update(self.dt)
+        #     powerup.draw(self.screen)
         self.screen.fill((0, 0, 0))
         for d in self.drawables:
             d.draw(self.screen)
@@ -607,6 +620,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             return
         if a==2 and self.last_asteroid_destroyed != None:
             self.spawn_from_asteroid(self.last_asteroid_destroyed)
+            self.last_asteroid_destroyed = None
             return
 
         edge = random.choice(ASTEROID_EDGES)
@@ -644,23 +658,30 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             life_weight /= total
             shot_weight /= total
             speed_weight /= total
-            powerup_type = random.choices(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)
+            powerup_type = random.choices(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)[0]
+            print(powerup_type)
             vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
             if powerup_type == "shot":
                 powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
                 powerup.velocity = vector3
+                #self.powerups.add(powerup)
+                #self.drawables.add(powerup)
+                #self.updatables.add(powerup)
                 self.action = "PowerUp_Spawned_Shot"
-                self.powerups.add(powerup)
             elif powerup_type == "speed":
                 powerup = SpeedPowerUp(asteroid.position.x,asteroid.position.y,20)
                 powerup.velocity = vector3
+                #self.powerups.add(powerup)
+                #self.drawables.add(powerup)
+                #self.updatables.add(powerup)
                 self.action = "PowerUp_Spawned_Speed"
-                self.powerups.add(powerup)
             elif powerup_type == "life":
                 powerup = LifePowerUp(asteroid.position.x,asteroid.position.y,5)
                 powerup.velocity = vector3
-                self.action = "PowerUp_Spawned_Life"
                 self.powerups.add(powerup)
+                self.drawables.add(powerup)
+                self.updatables.add(powerup)
+                self.action = "PowerUp_Spawned_Life"
 
     def _get_surrounding_buckets(self):
         px, py = self.player.position.x, self.player.position.y
@@ -787,7 +808,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             near_miss_bucket = 2 
         surrounding_asteroids_count = self._get_surrounding_buckets()
         return np.array(
-            [num_asts_bucket, px,
+            [num_asts_bucket, px, float(np.mean([a.velocity.x for a in self.asteroids] if self.asteroids else 0)) if self.asteroids else 0.0,
               py,self.player.velocity.x,self.player.velocity.x
               ,num_pup_bucket,near_miss_bucket,surrounding_asteroids_count],
             dtype=np.float32,
