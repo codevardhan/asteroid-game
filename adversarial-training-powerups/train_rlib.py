@@ -10,8 +10,6 @@ import pandas as pd
 
 if __name__ == "__main__":
     ray.init()
-    print(torch.backends.mps.is_available())  # Should print True
-    print(torch.backends.mps.is_built())  # Should print True
     def policy_mapping_fn(agent_id, *args, **kwargs):
         # agent_id is either "player" or "asteroid"
         return f"{agent_id}_policy"
@@ -22,14 +20,14 @@ if __name__ == "__main__":
     # 1) Environment + Env Config
     config = config.environment(
         env=AsteroidsRLLibEnv,
-        env_config={"render_mode": False},  # or True to see the window
+        env_config={"render_mode": True},  # or True to see the window
     )
 
     # 2) Framework
     config = config.framework("torch")
 
     # 3) Resources (GPUs etc.)
-    config = config.resources(num_gpus=0)
+    config = config.resources(num_gpus=1)
 
     # 4) Multi-agent setup
     env_example = AsteroidsRLLibEnv({"render_mode": True})
@@ -69,8 +67,9 @@ if __name__ == "__main__":
     config = config.training(
         gamma=0.99,
         lr=1e-3,
+        entropy_coeff=0.01
     )
-    config.rollout_fragment_length = 500
+    config.rollout_fragment_length = 300
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
     config.num_env_runners = 1
@@ -82,7 +81,7 @@ if __name__ == "__main__":
     tuner = tune.Tuner(
         "PPO",
     run_config=tune.RunConfig(
-    stop={"training_iteration": 500}  # Stops after 500 training iterations
+    stop={"training_iteration": 300}  # Stops after 300 training iterations
     ),
         param_space=config.to_dict(),
     )

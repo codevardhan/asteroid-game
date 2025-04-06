@@ -331,7 +331,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         self.collected = 0
         self.game_over = False
         self.steps_elapsed = 0
-
+        self.last_asteroid_spawned = True
+        self.last_powerup_spawned = True
         self.last_asteroid_destroyed = None
         self.near_miss_count = 0
         self.last_spawns = []
@@ -442,7 +443,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             for shot in list(self.shots):
                 if asteroid.collision_check(shot):
                     self.last_asteroid_destroyed = asteroid
-                    print(self.last_asteroid_destroyed)
+                    #print(self.last_asteroid_destroyed)
                     shot.kill()
                     asteroid.split()
                     destroyed += 1
@@ -479,8 +480,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         info_dict = {}
         if self.render_mode == True:
             self.render()
-        if self.game_over == True:
-            self.reset()
         return obs_dict, rew_dict, terminated, truncated, info_dict
 
     def render(self, mode="human"):
@@ -502,6 +501,12 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
 
     def _compute_player_reward(self):
         reward = 0
+        vx = self.player.velocity.x
+        vy = self.player.velocity.y
+        speed = (vx**2 + vy**2)**0.5
+        reward += 0.05 * speed
+        if speed < 0.1:
+            reward -= 0.05
         p_lives = self.player.player_lives
         #ensures player should be able to get life powerups when needed to survive, too little or many will makes game too easy or too hard
         if p_lives == 1:
@@ -563,22 +568,30 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         if len(self.asteroids) > MAX_ASTEROIDS_ONSCREEN:
             reward -= 0.1 * (len(self.asteroids) - MAX_ASTEROIDS_ONSCREEN)
 
+        if self.last_asteroid_spawned:
+            reward += 0.2
+            self.last_asteroid_spawned = False  
+
+        if self.last_powerup_spawned:
+            reward += 0.1
+            self.last_powerup_spawned = False
         px, py = self.player.position.x, self.player.position.y
         player_bucket_x = px // self.bucket_size
         player_bucket_y = py // self.bucket_size
         #checking # of asteroids in player bucket space
         asteroids_in_bucket = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x and
                                         a.position.y // self.bucket_size == player_bucket_y))
-        if asteroids_in_bucket > 3:
+        if asteroids_in_bucket > 5:
             reward -= 0.2 * asteroids_in_bucket
-        if asteroids_in_bucket == 0:
+        if asteroids_in_bucket <= 3:
             reward += 0.15
         #checking if lots of asteroids in one area of the game
-        cluster_threshold = 4
+        cluster_threshold = 6
         nearby_asteroids = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x or
                                         a.position.y // self.bucket_size == player_bucket_y))
         if nearby_asteroids > cluster_threshold:
             reward -= 0.3 * nearby_asteroids
+        
         # step cost
         reward -= 0.01
         return reward
@@ -588,25 +601,19 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
     # ----------------------------
     def _apply_player_action(self, a):
         """
-        4 possible player actions
+        5 possible player actions
         """
-        if a == 0:  # Move forward and turn left
-            self.player.rotate(self.dt, -1)  # Turn left
-            self.player.move(self.dt, 1)  # Move forward
-        
-        elif a == 1:  # Shoot
+        if a == 0:
+            self.player.rotate(self.dt, -1)
+        elif a == 1:
+            self.player.rotate(self.dt, 1)
+        elif a == 2:
+            self.player.move(self.dt, 1)
+        elif a == 3:
             new_shot = self.player.shoot()  # Shoot a projectile
             if new_shot:
                 self.shots.add(new_shot)  # Add shot to the game
-                self.updatables.add(new_shot)  # Add shot to the updatable objects
-    
-        elif a == 2:  # Move forward and turn right
-            self.player.rotate(self.dt, 1)  # Turn right
-            self.player.move(self.dt, 1)  # Move forward
-        elif a == 3:
-            self.player.move(self.dt, 1)
-        elif a == 4:  # Stop (no action)
-            self.player.move(self.dt, 0)
+                self.updatables.add(new_shot)  # Add shot to the updatable object
 
     def _apply_asteroid_action(self, a):
         """
@@ -621,8 +628,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         if a==2 and self.last_asteroid_destroyed != None:
             self.spawn_from_asteroid(self.last_asteroid_destroyed)
             self.last_asteroid_destroyed = None
+            self.last_asteroid_spawned = True
             return
-
+        self.last_asteroid_spawned = True
         edge = random.choice(ASTEROID_EDGES)
         radius = random.choice(POSSIBLE_RADII)
         speed = random.choice(POSSIBLE_SPEEDS)
@@ -659,7 +667,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             shot_weight /= total
             speed_weight /= total
             powerup_type = random.choices(["speed", "shot", "life"],weights=[speed_weight,shot_weight,life_weight],k=1)[0]
-            print(powerup_type)
+            #print(powerup_type)
             vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
             if powerup_type == "shot":
                 powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
@@ -809,7 +817,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         surrounding_asteroids_count = self._get_surrounding_buckets()
         return np.array(
             [num_asts_bucket, px, float(np.mean([a.velocity.x for a in self.asteroids] if self.asteroids else 0)) if self.asteroids else 0.0,
-              py,self.player.velocity.x,self.player.velocity.x
+              py,self.player.velocity.x,self.player.velocity.y
               ,num_pup_bucket,near_miss_bucket,surrounding_asteroids_count],
             dtype=np.float32,
             #8
