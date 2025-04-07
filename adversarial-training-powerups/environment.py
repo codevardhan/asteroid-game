@@ -180,23 +180,23 @@ class Player(CircleShape):
             self.rotate(invert_dt)
             self.current_action = 1
 
-        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        #     self.rotate(dt)
-        #     self.current_action = 2
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.rotate(dt)
+            self.current_action = 2
 
-        # if keys[pygame.K_w] or keys[pygame.K_UP]:
-        #     self.move(dt)
-        #     self.current_action = 3
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            self.move(dt)
+            self.current_action = 3
 
-        # if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        #     self.move(-dt)
-        #     self.current_action = 4
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.move(-dt)
+            self.current_action = 4
 
-        # if keys[pygame.K_SPACE]:
-        #     if self.timer <= 0:
-        #         self.shoot()
-        #         self.timer = self.player_shoot_cooldown
-        #     self.current_action = 5
+        if keys[pygame.K_SPACE]:
+            if self.timer <= 0:
+                self.shoot()
+                self.timer = self.player_shoot_cooldown
+            self.current_action = 5
 
         self.timer -= dt
         # pass
@@ -397,7 +397,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             config = {}
 
         # Rendering
-        self.render_mode = config["render_mode"]
+        self.render_mode = True
         pygame.init()
         self.clock = pygame.time.Clock()
         if self.render_mode:
@@ -517,9 +517,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.dt = 0
         prev_velocity = self.player.velocity.copy()
         # 1) Apply the player action
-        player_act = action_dict.get("player", 0)
-        if not self.game_over:
-            self._apply_player_action(player_act)
+        # player_act = action_dict.get("player", 0)
+        # if not self.game_over:
+        #     self._apply_player_action(player_act)
         velocity_diff = self.player.velocity - prev_velocity
         velocity_magnitude = velocity_diff.length()
         # 2) Apply the asteroid agent action

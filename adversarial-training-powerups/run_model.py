@@ -8,7 +8,7 @@ from environment import AsteroidsRLLibEnv
 # Create only the neural network (RLModule) from our algorithm checkpoint.
 # See here (https://docs.ray.io/en/master/rllib/checkpoints.html)
 # to learn more about checkpointing and the specific "path" used.
-checkpoint_path = "/Users/charlescarlson/ray_results/PPO_2025-04-06_23-19-21/PPO_AsteroidsRLLibEnv_1914a_00000_0_2025-04-06_23-19-21/checkpoint_000000/"
+checkpoint_path = "/Users/charlescarlson/ray_results/PPO_2025-04-07_12-53-36/PPO_AsteroidsRLLibEnv_d9643_00000_0_2025-04-07_12-53-37/checkpoint_000004/"
 rl_module_a = RLModule.from_checkpoint(
     Path(checkpoint_path)
     / "learner_group"
@@ -17,6 +17,7 @@ rl_module_a = RLModule.from_checkpoint(
     / "asteroid_policy"
 )
 env = AsteroidsRLLibEnv()
+episolon = 0.94
 for _ in range(1000):
     episode_return = 0.0
     done = False
@@ -46,7 +47,7 @@ for _ in range(1000):
         action_dict = {"player": None, "asteroid": greedy_action}
         # Send the action to the environment for the next step.
         obs_dict, rew_dict, terminated, truncated, info_dict = env.step(action_dict)
-
+        obs = obs_dict
         # Perform env-loop bookkeeping.
         episode_return += rew_dict.get("asteroid")
         done = terminated.get("asteroid") or truncated.get("asteroid")

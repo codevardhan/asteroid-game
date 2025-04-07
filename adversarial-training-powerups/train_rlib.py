@@ -130,7 +130,7 @@ if __name__ == "__main__":
     #    (still set gamma, lr, etc. via .training)
     config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
     config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
-    config.rollout_fragment_length = 200
+    config.rollout_fragment_length = 500
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     tuner = tune.Tuner(
             "PPO",
             run_config=tune.RunConfig(
-            stop={"training_iteration": 25},
+            stop={"training_iteration": 50},
             checkpoint_config=tune.CheckpointConfig(checkpoint_frequency=5),                                 # Stops after 300 training iterations
         ),
         param_space=config.to_dict()
