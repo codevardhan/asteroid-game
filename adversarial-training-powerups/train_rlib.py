@@ -54,8 +54,6 @@ class SelectiveTrainingCallback(RLlibCallback):
     def on_train_result(self, *, trainer, result, **kwargs):
         # Update every 2 iterations
         iteration = result["training_iteration"]
-
-        if iteration % 3 == 0:  # Train the player every 2 iterations
         
         if iteration % 3 == 0:  # Train the player every 3 iterations
             trainer.workers.foreach_worker(
