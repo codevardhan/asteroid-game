@@ -434,12 +434,13 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.steps_elapsed += 1
         else:
             self.dt = 0
-
+        prev_velocity = self.player.velocity.copy()
         # 1) Apply the player action
         player_act = action_dict.get("player", 0)
         if not self.game_over:
             self._apply_player_action(player_act)
-
+        velocity_diff  = self.player.velocity - prev_velocity
+        velocity_magnitude = velocity_diff.length()
         # 2) Apply the asteroid agent action
         asteroid_act = action_dict.get("asteroid", 0)
         if not self.game_over:
@@ -496,6 +497,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
 
         # 7) Compute rewards
         player_reward = float(destroyed) * 0.3 + float(self.collected) * 0.3 + self._compute_player_reward()
+        player_reward -= velocity_magnitude * 0.1
         asteroid_reward = self._compute_fun_reward()
 
         # 8) Set termination flags (using new Gymnasium API style)
@@ -533,8 +535,10 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         vy = self.player.velocity.y
         speed = (vx**2 + vy**2)**0.5
         reward += 0.05 * speed
+        if self.player.velocity.length() > 0:
+            player_reward += 0.05
         if speed < 0.1:
-            reward -= 0.05
+            reward -= 0.4
         p_lives = self.player.player_lives
         #ensures player should be able to get life powerups when needed to survive, too little or many will makes game too easy or too hard
         if p_lives == 1:
@@ -566,10 +570,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         #checking # of asteroids in player bucket space
         asteroids_in_bucket = sum(1 for a in self.asteroids if (a.position.x // self.bucket_size == player_bucket_x and
                                         a.position.y // self.bucket_size == player_bucket_y))
-        if asteroids_in_bucket > 3:
+        if asteroids_in_bucket > 6:
             reward -= 0.2 * asteroids_in_bucket
-        if asteroids_in_bucket == 0:
-            reward += 0.15
         return reward
     # ----------------------------
     #   Koster-inspired "fun" reward

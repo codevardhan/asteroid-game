@@ -87,7 +87,6 @@ if __name__ == "__main__":
         lr=1e-3,
         entropy_coeff=0.01
     )
-    config.rollout_fragment_length = 200
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
     config.num_env_runners = 1
