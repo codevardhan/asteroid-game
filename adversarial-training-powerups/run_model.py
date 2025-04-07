@@ -7,7 +7,7 @@ from environment import AsteroidsRLLibEnv
 # Create only the neural network (RLModule) from our algorithm checkpoint.
 # See here (https://docs.ray.io/en/master/rllib/checkpoints.html)
 # to learn more about checkpointing and the specific "path" used.
-checkpoint_path = "/Users/charlescarlson/ray_results/PPO_2025-04-03_22-27-57/PPO_AsteroidsRLLibEnv_6bb89_00000_0_2025-04-03_22-27-57/checkpoint_000000/"
+checkpoint_path = "/Users/charlescarlson/ray_results/PPO_2025-04-06_23-19-21/PPO_AsteroidsRLLibEnv_1914a_00000_0_2025-04-06_23-19-21/checkpoint_000000/"
 rl_module_a = RLModule.from_checkpoint(
     Path(checkpoint_path)
     / "learner_group"

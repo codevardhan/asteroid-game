@@ -149,34 +149,34 @@ class Player(CircleShape):
         # If we want to handle the default "human" logic inside the environment,
         # we’ll do it there. This function can remain an empty stub if the env
         # calls movement/rotation directly.
-        # keys = pygame.key.get_pressed()
-        # self.current_action = 0
-        # #w,a,s,d and arrow keys
-        # if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-        #     invert_dt = dt * -1
-        #     self.rotate(invert_dt)
-        #     self.current_action = 1
+        keys = pygame.key.get_pressed()
+        self.current_action = 0
+        #w,a,s,d and arrow keys
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            invert_dt = dt * -1
+            self.rotate(invert_dt)
+            self.current_action = 1
 
-        # if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-        #     self.rotate(dt)
-        #     self.current_action = 2
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.rotate(dt)
+            self.current_action = 2
             
-        # if keys[pygame.K_w] or keys[pygame.K_UP]:
-        #     self.move(dt)
-        #     self.current_action = 3
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            self.move(dt)
+            self.current_action = 3
 
-        # if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-        #     self.move(-dt)
-        #     self.current_action = 4
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.move(-dt)
+            self.current_action = 4
             
-        # if keys[pygame.K_SPACE]:
-        #     if self.timer <= 0:
-        #         self.shoot()
-        #         self.timer = self.player_shoot_cooldown
-        #     self.current_action = 5
+        if keys[pygame.K_SPACE]:
+            if self.timer <= 0:
+                self.shoot()
+                self.timer = self.player_shoot_cooldown
+            self.current_action = 5
 
-        # self.timer -= dt
-        pass
+        self.timer -= dt
+        #pass
 
     def move(self, dt, forward_factor=1.0):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -496,7 +496,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.game_over = True
 
         # 7) Compute rewards
-        player_reward = float(destroyed) * 0.3 + float(self.collected) * 0.3 + self._compute_player_reward()
+        player_reward = float(destroyed) * 0.3 + float(self.collected) * 0.3 #+ self._compute_player_reward()
         player_reward -= velocity_magnitude * 0.1
         asteroid_reward = self._compute_fun_reward()
 
@@ -701,21 +701,21 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             vector3 = pygame.math.Vector2.rotate(asteroid.velocity,random.uniform(20, 50))
             if powerup_type == "shot":
                 powerup = ShotPowerUp(asteroid.position.x,asteroid.position.y,2)
-                powerup.velocity = vector3
+                #powerup.velocity = vector3
                 #self.powerups.add(powerup)
                 #self.drawables.add(powerup)
                 #self.updatables.add(powerup)
                 self.action = "PowerUp_Spawned_Shot"
             elif powerup_type == "speed":
                 powerup = SpeedPowerUp(asteroid.position.x,asteroid.position.y,20)
-                powerup.velocity = vector3
+                #powerup.velocity = vector3
                 #self.powerups.add(powerup)
                 #self.drawables.add(powerup)
                 #self.updatables.add(powerup)
                 self.action = "PowerUp_Spawned_Speed"
             elif powerup_type == "life":
                 powerup = LifePowerUp(asteroid.position.x,asteroid.position.y,5)
-                powerup.velocity = vector3
+                #powerup.velocity = vector3
                 self.powerups.add(powerup)
                 self.drawables.add(powerup)
                 self.updatables.add(powerup)
