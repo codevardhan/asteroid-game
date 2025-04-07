@@ -32,11 +32,12 @@ from ray.rllib.algorithms.callbacks import DefaultCallbacks
 #         checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
 #         self.model.load_state_dict(torch.load(checkpoint_path))
 
+
 class SelectiveTrainingCallback(RLlibCallback):
     def on_train_result(self, *, trainer, result, **kwargs):
         # Update every 2 iterations
         iteration = result["training_iteration"]
-        
+
         if iteration % 3 == 0:  # Train the player every 3 iterations
             trainer.workers.foreach_worker(
                 lambda worker: worker.set_policies_to_train(
@@ -128,12 +129,8 @@ if __name__ == "__main__":
     # 6) Training hyperparameters
     #    (still set gamma, lr, etc. via .training)
     config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
-    config = config.training(
-        gamma=0.99,
-        lr=1e-3,
-        entropy_coeff=0.01
-    )
-    config.rollout_fragment_length=200
+    config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
+    config.rollout_fragment_length = 200
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
 
