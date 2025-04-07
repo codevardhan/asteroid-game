@@ -149,7 +149,33 @@ class Player(CircleShape):
         # If we want to handle the default "human" logic inside the environment,
         # we’ll do it there. This function can remain an empty stub if the env
         # calls movement/rotation directly.
-        pass
+        keys = pygame.key.get_pressed()
+        self.current_action = 0
+        #w,a,s,d and arrow keys
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            invert_dt = dt * -1
+            self.rotate(invert_dt)
+            self.current_action = 1
+
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.rotate(dt)
+            self.current_action = 2
+            
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            self.move(dt)
+            self.current_action = 3
+
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.move(-dt)
+            self.current_action = 4
+            
+        if keys[pygame.K_SPACE]:
+            if self.timer <= 0:
+                self.shoot()
+                self.timer = self.player_shoot_cooldown
+            self.current_action = 5
+
+        self.timer -= dt
 
     def move(self, dt, forward_factor=1.0):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -206,6 +232,7 @@ class PowerUp(CircleShape):
         self.kill()
     
     def apply_effect(self,player):
+        print("applying effect")
         match(self.type):
             case 'speed_power_up':
                 player.player_powerups['speed_power_up']+=1
@@ -408,9 +435,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             self.dt = 0
 
         # 1) Apply the player action
-        player_act = action_dict.get("player", 0)
-        if not self.game_over:
-            self._apply_player_action(player_act)
+        # player_act = action_dict.get("player", 0)
+        # if not self.game_over:
+        #     self._apply_player_action(player_act)
 
         # 2) Apply the asteroid agent action
         asteroid_act = action_dict.get("asteroid", 0)
@@ -563,7 +590,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             reward -= 5.0 + 5.0 * early_factor
         # boredom
         if len(self.asteroids) < 1:
-            reward -= 0.05
+            reward -= 0.2
         # penalty if too many
         if len(self.asteroids) > MAX_ASTEROIDS_ONSCREEN:
             reward -= 0.1 * (len(self.asteroids) - MAX_ASTEROIDS_ONSCREEN)

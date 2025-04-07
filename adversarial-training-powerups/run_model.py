@@ -15,13 +15,6 @@ rl_module_a = RLModule.from_checkpoint(
     / "rl_module"
     / "asteroid_policy"
 )
-rl_module_p = RLModule.from_checkpoint(
-    Path(checkpoint_path)
-    / "learner_group"
-    / "learner"
-    / "rl_module"
-    / "player_policy"
-)
 env = AsteroidsRLLibEnv()
 for _ in range(1000):
     episode_return = 0.0
@@ -33,19 +26,12 @@ for _ in range(1000):
 
     # Compute the next action from a batch (B=1) of observations.
         obs_batch_asteroid = torch.from_numpy(obs.get("asteroid")).unsqueeze(0)  # add batch B=1 dimension
-        obs_batch_player = torch.from_numpy(obs.get("player")).unsqueeze(0)  # add batch B=1 dimension
-        print(obs_batch_player)
         print(torch.from_numpy(obs.get("asteroid")).unsqueeze(0))
     #obs_batch_player = torch.from_numpy(obs.get("player")).unsqueeze(0)  # add batch B=1 dimension
         model_outputs = rl_module_a.forward_inference({"obs": obs_batch_asteroid})
-        print()
-        model_outputs_player = rl_module_p.forward_inference({"obs": obs_batch_player})
-        print(model_outputs)
     # Extract the action distribution parameters from the output and dissolve batch dim.
         print(model_outputs["action_dist_inputs"][0].numpy())
         action_dist_params = model_outputs["action_dist_inputs"]
-        a_dist = model_outputs_player["action_dist_inputs"]
-        print(action_dist_params)
     # We have continuous actions -> take the mean (max likelihood).
         # greedy_action = np.clip(
         # action_dist_params[0:1],  # 0=mean, 1=log(stddev), [0:1]=use mean, but keep shape=(1,)
@@ -54,9 +40,7 @@ for _ in range(1000):
         # )
     # For discrete actions, you should take the argmax over the logits:
         greedy_action = np.argmax(action_dist_params)
-        g_a = np.argmax(a_dist)
-        print(greedy_action,g_a)
-        action_dict = {"player": g_a, "asteroid": greedy_action}
+        action_dict = {"player": None, "asteroid": greedy_action}
     # Send the action to the environment for the next step.
         obs_dict, rew_dict, terminated, truncated, info_dict= env.step(action_dict)
 

@@ -4,10 +4,27 @@ import torch
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.algorithms.ppo import PPO
+from ray.rllib.agents import ppo
 from environment import AsteroidsRLLibEnv
 import matplotlib.pyplot as plt
 import pandas as pd
 
+class SelectiveTrainingCallback(DefaultCallbacks):
+    def on_train_result(self, *, trainer, result, **kwargs):
+        # Update every 2 iterations
+        iteration = result["training_iteration"]
+        
+        if iteration % 3 == 0:  # Train the player every 2 iterations
+            trainer.workers.foreach_worker(
+                lambda worker: worker.set_policies_to_train(["player_policy", "asteroid_policy"])
+            )
+        else:
+            trainer.workers.foreach_worker(
+                lambda worker: worker.set_policies_to_train(["asteroid_policy"])
+            )
+            
+        return result
+    
 if __name__ == "__main__":
     ray.init()
     def policy_mapping_fn(agent_id, *args, **kwargs):
@@ -22,7 +39,6 @@ if __name__ == "__main__":
         env=AsteroidsRLLibEnv,
         env_config={"render_mode": True},  # or True to see the window
     )
-
     # 2) Framework
     config = config.framework("torch")
 
@@ -49,6 +65,8 @@ if __name__ == "__main__":
         policy_mapping_fn=policy_mapping_fn,
         policies_to_train=["player_policy", "asteroid_policy"],
     )
+    config["callbacks"] = SelectiveTrainingCallback
+
 
     # 5) RLModule configuration for your model architecture
     #    (the new place to put 'fcnet_hiddens', CNN sizes, etc.)
