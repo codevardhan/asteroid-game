@@ -7,8 +7,30 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.callbacks.callbacks import RLlibCallback
 from environment import AsteroidsRLLibEnv
+
+# from env2 import AsteroidsRLLibEnv
 import matplotlib.pyplot as plt
 import pandas as pd
+
+
+
+class TrainableCheckpoint(tune.Trainable):
+    def setup(self, config):
+        self.model = nn.Sequential(
+            nn.Linear(config.get("input_size", 32), 32), nn.ReLU(), nn.Linear(32, 10)
+        )
+
+    def step(self):
+        return {}
+
+    def save_checkpoint(self, tmp_checkpoint_dir):
+        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
+        torch.save(self.model.state_dict(), checkpoint_path)
+        return tmp_checkpoint_dir
+
+    def load_checkpoint(self, tmp_checkpoint_dir):
+        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
+        self.model.load_state_dict(torch.load(checkpoint_path))
 
 class TrainableCheckpoint(tune.Trainable):
     def setup(self, config):
@@ -32,22 +54,27 @@ class SelectiveTrainingCallback(RLlibCallback):
     def on_train_result(self, *, trainer, result, **kwargs):
         # Update every 2 iterations
         iteration = result["training_iteration"]
+
+        if iteration % 3 == 0:  # Train the player every 2 iterations
         
         if iteration % 3 == 0:  # Train the player every 3 iterations
             trainer.workers.foreach_worker(
-                lambda worker: worker.set_policies_to_train(["player_policy", "asteroid_policy"])
+                lambda worker: worker.set_policies_to_train(
+                    ["player_policy", "asteroid_policy"]
+                )
             )
         else:
             trainer.workers.foreach_worker(
                 lambda worker: worker.set_policies_to_train(["asteroid_policy"])
             )
-            
+
         return result
-    
+
+
 if __name__ == "__main__":
     ray.init()
+
     def policy_mapping_fn(agent_id, *args, **kwargs):
-        # agent_id is either "player" or "asteroid"
         return f"{agent_id}_policy"
 
     # Create a base PPOConfig:
@@ -56,7 +83,7 @@ if __name__ == "__main__":
     # 1) Environment + Env Config
     config = config.environment(
         env=AsteroidsRLLibEnv,
-        env_config={"render_mode": True},  # or True to see the window
+        env_config={"render_mode": True},
     )
     # 2) Framework
     config = config.framework("torch")
@@ -66,41 +93,61 @@ if __name__ == "__main__":
 
     # 4) Multi-agent setup
     env_example = AsteroidsRLLibEnv({"render_mode": True})
+
+    # config = config.callbacks(VideoSaveCallback)
+
     config = config.multi_agent(
         policies={
             "player_policy": (
-                None,  # default policy class
+                None,
                 env_example.observation_space_player,
                 env_example.action_space_player,
-                {},
+                {
+                    "model": {
+                        "fcnet_hiddens": [32, 64],
+                        "fcnet_activation": "relu",
+                    },
+                },
             ),
             "asteroid_policy": (
                 None,
                 env_example.observation_space_asteroid,
                 env_example.action_space_asteroid,
-                {},
+                {
+                    "model": {
+                        "fcnet_hiddens": [32, 64],
+                        "fcnet_activation": "tanh",
+                    },
+                },
             ),
         },
-        policy_mapping_fn=policy_mapping_fn,
+        policy_mapping_fn=lambda agent_id, *args, **kw: f"{agent_id}_policy",
         policies_to_train=["player_policy", "asteroid_policy"],
     )
     config["callbacks"] = SelectiveTrainingCallback
 
-
     # 5) RLModule configuration for your model architecture
     #    (the new place to put 'fcnet_hiddens', CNN sizes, etc.)
-    config = config.rl_module(
-        model_config={
-            "fcnet_hiddens": [
-                64,
-                64,
-            ],  # previously under model={"fcnet_hiddens": [...]}
-            # Additional new-API fields as needed (e.g. activation_fn, etc.)
-        }
-    )
+    # config = config.rl_module(
+    #     model_config={
+    #         "fcnet_hiddens": [
+    #             64,
+    #             64,
+    #         ],
+    #         # "fcnet_activation": "relu",
+    #     }
+    # )
+
+    #     config = config.rl_module(
+    #     model_config={
+    #         "fcnet_hiddens": [64, 64],
+    #         "fcnet_activation": "relu",
+    #     }
+    # )
 
     # 6) Training hyperparameters
     #    (still set gamma, lr, etc. via .training)
+    config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
     config = config.training(
         gamma=0.99,
         lr=1e-3,
@@ -109,19 +156,17 @@ if __name__ == "__main__":
     config.rollout_fragment_length=200
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
-    config.num_env_runners = 1
-    # config.num_envs_per_worker = 1
-    # config.create_env_on_local_worker = True
-    # etc.
+
+    config.num_env_runners = 2
 
     # Now run with Ray Tune’s Tuner
     tuner = tune.Tuner(
         "PPO",
-        TrainableCheckpoint,
+            TrainableCheckpoint,
     run_config=tune.RunConfig(
-    stop={"training_iteration": 25},
+            stop={"training_iteration": 25},
          checkpoint_config=tune.CheckpointConfig(checkpoint_frequency=5),                                 # Stops after 300 training iterations
-    )
+        )
     )
     results = tuner.fit()
     print("Training completed!")
@@ -130,26 +175,5 @@ if __name__ == "__main__":
     trained_algo = PPO.from_checkpoint(checkpoint_dir)
     save_path = os.path.join(checkpoint_dir, "trained_model")
     trained_algo.save(save_path)
+
     print(f"Model saved at: {save_path}")
-    # # Assuming 'results' is the Tune ExperimentAnalysis object returned by tuner.fit()
-    # df = results.get_dataframe()
-
-    # # Inspect column names to see what metrics were logged.
-    # print(df.columns)
-
-    # # Plot overall mean episode reward
-    # plt.figure(figsize=(10,6))
-    # plt.plot(df['episode_reward_mean'], label='Mean Episode Reward')
-
-    # # If your multi-agent metrics are logged separately, you might have columns like:
-    # # 'policy_reward_player_mean', 'policy_reward_asteroid_mean'
-    # if 'policy_reward_player_mean' in df.columns:
-    #     plt.plot(df['policy_reward_player_mean'], label='Player Mean Reward')
-    # if 'policy_reward_asteroid_mean' in df.columns:
-    #     plt.plot(df['policy_reward_asteroid_mean'], label='Asteroid Mean Reward')
-
-    # plt.xlabel('Iteration')
-    # plt.ylabel('Reward')
-    # plt.title('Training Progress')
-    # plt.legend()
-    # plt.show()
