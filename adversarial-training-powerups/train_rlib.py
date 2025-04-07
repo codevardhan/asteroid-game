@@ -11,7 +11,7 @@ from environment import AsteroidsRLLibEnv
 # from env2 import AsteroidsRLLibEnv
 import matplotlib.pyplot as plt
 import pandas as pd
-
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 
 class TrainableCheckpoint(tune.Trainable):
