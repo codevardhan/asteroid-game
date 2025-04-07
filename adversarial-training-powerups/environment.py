@@ -174,7 +174,7 @@ class Player(CircleShape):
         # calls movement/rotation directly.
         keys = pygame.key.get_pressed()
         self.current_action = 0
-        #w,a,s,d and arrow keys
+        # w,a,s,d and arrow keys
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             invert_dt = dt * -1
             self.rotate(invert_dt)
@@ -199,7 +199,7 @@ class Player(CircleShape):
         #     self.current_action = 5
 
         self.timer -= dt
-        #pass
+        # pass
 
     def can_shoot(self):
         return self.time_since_last_shot >= self.player_shoot_cooldown
