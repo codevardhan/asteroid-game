@@ -439,7 +439,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         #     low=-1e5, high=1e5, shape=(9,), dtype=np.float32
         # )
         self.observation_space_player = Box(
-            low=-1e5, high=1e5, shape=(9,), dtype=np.float32
+            low=-1e5, high=1e5, shape=(11,), dtype=np.float32
         )
         self.observation_space_asteroid = Box(
             low=-1e5, high=1e5, shape=(9,), dtype=np.float32
@@ -579,8 +579,8 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
                 self.near_miss_count += 1
 
         # 6) Check time limit
-        if self.steps_elapsed >= self.max_steps:
-            self.game_over = True
+        # if self.steps_elapsed >= self.max_steps:
+        #     self.game_over = True
 
         # 7) Compute rewards
         player_reward = (
@@ -626,7 +626,9 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             d.draw(self.screen)
         self.font.render_to(
             self.screen, (10, 10), f"Score: {self.score}", (255, 255, 255)
+            
         )
+        self.font.render_to(self.screen, (180,10),f"Lives: {self.player.player_lives}",(255,255,255))
         pygame.display.flip()
 
     def close(self):
@@ -743,7 +745,11 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         radius = random.choice(POSSIBLE_RADII)
         speed = random.choice(POSSIBLE_SPEEDS)
         angle = random.choice(POSSIBLE_ANGLES)
-
+        
+        frac = random.random()
+        pos = edge[1](frac)
+        direction = edge[0].rotate(angle)
+        vel = direction * speed
         # Create the asteroid (you should have an Asteroid class to instantiate)
         asteroid = Asteroid(pos.x, pos.y, radius)
         asteroid.velocity = vel
@@ -756,8 +762,6 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         life_weight = 0.2
         shot_weight = 0.3
         speed_weight = 0.5
-
-    def spawn_from_asteroid(self, asteroid):
         if self.player.player_lives < 2:
             life_weight += 0.4
         if len(self.asteroids) > 10:

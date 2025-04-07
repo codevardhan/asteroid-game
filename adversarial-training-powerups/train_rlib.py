@@ -2,6 +2,7 @@ import ray
 import os
 import torch
 import numpy as np
+import torch.nn as nn
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.algorithms.ppo import PPO
@@ -13,42 +14,23 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
+# class TrainableCheckpoint(tune.Trainable):
+#     def setup(self, config):
+#         self.model = nn.Sequential(
+#             nn.Linear(config.get("input_size", 32), 32), nn.ReLU(), nn.Linear(32, 10)
+#         )
 
-class TrainableCheckpoint(tune.Trainable):
-    def setup(self, config):
-        self.model = nn.Sequential(
-            nn.Linear(config.get("input_size", 32), 32), nn.ReLU(), nn.Linear(32, 10)
-        )
+#     def step(self):
+#         return {}
 
-    def step(self):
-        return {}
+#     def save_checkpoint(self, tmp_checkpoint_dir):
+#         checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
+#         torch.save(self.model.state_dict(), checkpoint_path)
+#         return tmp_checkpoint_dir
 
-    def save_checkpoint(self, tmp_checkpoint_dir):
-        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
-        torch.save(self.model.state_dict(), checkpoint_path)
-        return tmp_checkpoint_dir
-
-    def load_checkpoint(self, tmp_checkpoint_dir):
-        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
-        self.model.load_state_dict(torch.load(checkpoint_path))
-
-class TrainableCheckpoint(tune.Trainable):
-    def setup(self, config):
-        self.model = nn.Sequential(
-            nn.Linear(config.get("input_size", 32), 32), nn.ReLU(), nn.Linear(32, 10)
-        )
-
-    def step(self):
-        return {}
-
-    def save_checkpoint(self, tmp_checkpoint_dir):
-        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
-        torch.save(self.model.state_dict(), checkpoint_path)
-        return tmp_checkpoint_dir
-
-    def load_checkpoint(self, tmp_checkpoint_dir):
-        checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
-        self.model.load_state_dict(torch.load(checkpoint_path))
+#     def load_checkpoint(self, tmp_checkpoint_dir):
+#         checkpoint_path = os.path.join(tmp_checkpoint_dir, "multi-agent-asteroid.pth")
+#         self.model.load_state_dict(torch.load(checkpoint_path))
 
 class SelectiveTrainingCallback(RLlibCallback):
     def on_train_result(self, *, trainer, result, **kwargs):
@@ -155,16 +137,16 @@ if __name__ == "__main__":
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
 
-    config.num_env_runners = 2
+    config.num_env_runners = 1
 
     # Now run with Ray Tune’s Tuner
     tuner = tune.Tuner(
-        "PPO",
-            TrainableCheckpoint,
-    run_config=tune.RunConfig(
+            "PPO",
+            run_config=tune.RunConfig(
             stop={"training_iteration": 25},
-         checkpoint_config=tune.CheckpointConfig(checkpoint_frequency=5),                                 # Stops after 300 training iterations
-        )
+            checkpoint_config=tune.CheckpointConfig(checkpoint_frequency=5),                                 # Stops after 300 training iterations
+        ),
+        param_space=config.to_dict()
     )
     results = tuner.fit()
     print("Training completed!")
