@@ -4,12 +4,12 @@ import torch
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.algorithms.ppo import PPO
-from ray.rllib.agents import ppo
+from ray.rllib.callbacks.callbacks import RLlibCallback
 from environment import AsteroidsRLLibEnv
 import matplotlib.pyplot as plt
 import pandas as pd
 
-class SelectiveTrainingCallback(DefaultCallbacks):
+class SelectiveTrainingCallback(RLlibCallback):
     def on_train_result(self, *, trainer, result, **kwargs):
         # Update every 2 iterations
         iteration = result["training_iteration"]
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         lr=1e-3,
         entropy_coeff=0.01
     )
-    config.rollout_fragment_length = 300
+    config.rollout_fragment_length = 200
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
     config.num_env_runners = 1
