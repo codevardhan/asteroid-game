@@ -199,7 +199,7 @@ class Player(CircleShape):
             self.current_action = 5
 
         self.timer -= dt
-        # pass
+        return
 
     def can_shoot(self):
         return self.time_since_last_shot >= self.player_shoot_cooldown
@@ -516,7 +516,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
         else:
             self.dt = 0
         prev_velocity = self.player.velocity.copy()
-        # 1) Apply the player action
+        #1) Apply the player action
         # player_act = action_dict.get("player", 0)
         # if not self.game_over:
         #     self._apply_player_action(player_act)
@@ -587,6 +587,7 @@ class AsteroidsRLLibEnv(MultiAgentEnv):
             float(destroyed) * 0.3
             + float(self.collected) * 0.3
             + self._compute_player_reward()
+            - velocity_magnitude * 0.1
         )
         asteroid_reward = self._compute_fun_reward()
 

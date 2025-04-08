@@ -38,7 +38,7 @@ class SelectiveTrainingCallback(RLlibCallback):
         # Update every 2 iterations
         iteration = result["training_iteration"]
 
-        if iteration % 3 == 0:  # Train the player every 3 iterations
+        if iteration % 2 == 0:  # Train the player every 2 iterations
             trainer.workers.foreach_worker(
                 lambda worker: worker.set_policies_to_train(
                     ["player_policy", "asteroid_policy"]
@@ -129,18 +129,17 @@ if __name__ == "__main__":
     # 6) Training hyperparameters
     #    (still set gamma, lr, etc. via .training)
     config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
-    config = config.training(gamma=0.99, lr=1e-3, entropy_coeff=0.01)
-    config.rollout_fragment_length = 500
+    config.rollout_fragment_length = 200
     # 7) Rollout/worker config. The new API uses direct fields:
     #    Typically: config.num_rollout_workers, not config.num_env_runners
 
-    config.num_env_runners = 1
+    config.num_env_runners = 2
 
     # Now run with Ray Tune’s Tuner
     tuner = tune.Tuner(
             "PPO",
             run_config=tune.RunConfig(
-            stop={"training_iteration": 50},
+            stop={"training_iteration": 200},
             checkpoint_config=tune.CheckpointConfig(checkpoint_frequency=5),                                 # Stops after 300 training iterations
         ),
         param_space=config.to_dict()
