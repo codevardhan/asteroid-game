@@ -5,8 +5,9 @@ from player import Player
 from asteroid import Asteroid
 from ast_field import AsteroidField
 from shot import Shot
+from powerups import PowerUp
 from RLlevel import RLDifficultyManager
-
+from powerup_manager import PowerUpManager
 
 def main():
     pygame.init()
@@ -20,12 +21,14 @@ def main():
     drawables = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    powerups = pygame.sprite.Group()
 
     # Container setup
     Asteroid.containers = (asteroids, updatables, drawables)
     Shot.containers = (shots, updatables, drawables)
     AsteroidField.containers = updatables
     Player.containers = (updatables, drawables)
+    PowerUp.containers = (powerups,updatables,drawables)
 
     # Difficulty manager
     difficulty_manager = RLDifficultyManager()
@@ -35,8 +38,9 @@ def main():
         difficulty_manager.load_model("difficulty_model.json")
     except:
         print("Starting with a new model.")
-
+    PowerUpManager.containers = updatables
     asteroid_field = AsteroidField(difficulty_manager)
+    powerup_m  =  PowerUpManager()
     updatables.add(asteroid_field)
 
     # Game state
@@ -52,7 +56,7 @@ def main():
     shots_hit = 0
     near_misses = 0
     near_miss_distance = PLAYER_RADIUS * 2
-
+    collected = 0
     difficulty_message = ""
     difficulty_timer = 0
 
@@ -80,11 +84,13 @@ def main():
                     drawables.empty()
                     asteroids.empty()
                     shots.empty()
+                    powerups.empty()
 
                     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     player.shots_fired_count = 0
 
                     asteroid_field = AsteroidField(difficulty_manager)
+                    powerup_m = PowerUpManager()
                     updatables.add(asteroid_field)
 
                 elif event.key == pygame.K_SPACE:
@@ -104,13 +110,14 @@ def main():
                 "shots_fired": shots_fired,
                 "shots_hit": shots_hit,
                 "player_alive": True,
+                "collected_powerups":collected,
                 "score": score
             }
 
             shots_fired = 0
             shots_hit = 0
             near_misses = 0
-
+            collected = 0
             episode_ended = difficulty_manager.update(dt, player_data)
 
             if difficulty_timer > 0:
@@ -125,13 +132,16 @@ def main():
                 near_misses += 1
 
             if asteroid.collision_check(player):
-                game_over = True
+                player.player_lives -= 1
+                if player.player_lives == 0:
+                    game_over = True
 
                 player_data = {
                     "near_misses": near_misses,
                     "shots_fired": shots_fired,
                     "shots_hit": shots_hit,
                     "player_alive": False,
+                    "collected_powerups": collected,
                     "score": score
                 }
 
@@ -144,9 +154,17 @@ def main():
             for shot in shots:
                 if asteroid.collision_check(shot):
                     asteroid.split()
+                    powerup_m.spawn_from_asteroid(asteroid)
                     shot.kill()
                     score += 1
                     shots_hit += 1
+
+            for powerup in powerups:
+                if powerup.collision_check(player):
+                    powerup.apply_effect(player)
+                    collected += 1
+                    powerup.remove()
+
 
         # Draw UI
         font.render_to(screen, (10, 10), f"Score: {score}", (255, 255, 255))
@@ -167,7 +185,7 @@ def main():
 
             difficulty_info = f"Spawn Rate: {difficulty_manager.get_spawn_rate():.2f}s | Speed: {difficulty_manager.get_speed_range()[0]:.0f}-{difficulty_manager.get_speed_range()[1]:.0f}"
             small_font.render_to(screen, (10, SCREEN_HEIGHT - 60), difficulty_info, (200, 200, 200))
-
+            font.render_to(screen, (180,10),f"Lives: {player.player_lives}",(255,255,255))
             explore_info = f"AI Learning: {difficulty_manager.get_exploration_rate():.2f}"
             small_font.render_to(screen, (10, SCREEN_HEIGHT - 30), explore_info, (180, 180, 220))
 

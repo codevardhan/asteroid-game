@@ -114,14 +114,15 @@ def main():
                 player.position.x = SCREEN_WIDTH / 2
                 player.position.y = SCREEN_HEIGHT / 2
                 lives = player.player_lives
-                if lives == 0:
+                if player.player_lives == 0:
                     game_over = True
                 break
                 # return
         
             for shot in shots:
                 if asteroid.collision_check(shot):
-                    asteroid.split(powerup_manager)
+                    asteroid.split()
+                    powerup_manager.spawn_from_asteroid(asteroid)
                     if powerup_manager.action != None:
                         collect_data(player,shots,score,elapsed_time,asteroids,powerups,powerup_manager.action)
                     shot.kill()

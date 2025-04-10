@@ -4,11 +4,7 @@ import sys
 import time
 
 #using random asteroid implementation
-main_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(os.path.join(main_dir,"agents"))
-sys.path.append(os.path.join(main_dir,"asteroid-random"))
-sys.path.insert(0, 'asteroid-random')
-sys.path.insert(0, 'agents')
+
 from a_star import AStarAgent
 from constants import *
 
@@ -178,12 +174,14 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         """
         # 1) Spawn asteroids based on the RL action
         action = int(action)  # 0..spawn_limit
+        print(action)
         if action == 1:
             current_time = time.time()
             if current_time - self.last_spawn_time >= self.spawn_interval:
                 self._spawn_asteroid()
                 self.last_spawn_time = current_time
         if action == 2 and self.last_asteroid_destroyed != None:
+            print("spawning powerup")
             self.powerup_manager.spawn_from_asteroid(self.last_asteroid_destroyed)
         # 2) Let the A* agent update (which controls the player for one tick).
         dt = 1.0 / 60.0
