@@ -236,6 +236,7 @@ class AsteroidsPCGEnvWithAStar(gym.Env):
         # Now update all sprites (position, collisions, etc.)
         for upd in self.updatables:
             upd.update(dt)
+        self.player.update_effects()
         self.last_asteroid_destroyed = None
         self._handle_collisions()
         self._wrap_sprites()

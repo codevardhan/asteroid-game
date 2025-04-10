@@ -40,7 +40,7 @@ def main():
         print("Starting with a new model.")
     PowerUpManager.containers = updatables
     asteroid_field = AsteroidField(difficulty_manager)
-    powerup_m  =  PowerUpManager()
+    powerup_m  =  PowerUpManager(difficulty_manager)
     updatables.add(asteroid_field)
 
     # Game state
@@ -50,7 +50,7 @@ def main():
     game_over = False
     score = 0
     dt = 0
-
+    lives  = 1
     # RL metrics
     shots_fired = 0
     shots_hit = 0
@@ -88,9 +88,9 @@ def main():
 
                     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     player.shots_fired_count = 0
-
+                    lives  = player.player_lives
                     asteroid_field = AsteroidField(difficulty_manager)
-                    powerup_m = PowerUpManager()
+                    powerup_m = PowerUpManager(difficulty_manager)
                     updatables.add(asteroid_field)
 
                 elif event.key == pygame.K_SPACE:
@@ -104,13 +104,13 @@ def main():
 
         if not game_over:
             dt = clock.tick(60) / 1000.0
-
+            #print(len(player.active_effects))
             player_data = {
                 "near_misses": near_misses,
                 "shots_fired": shots_fired,
                 "shots_hit": shots_hit,
                 "player_alive": True,
-                "collected_powerups":collected,
+                "collected_powerups":len(player.active_effects),
                 "score": score
             }
 
@@ -125,6 +125,7 @@ def main():
 
         for updateable in updatables:
             updateable.update(dt)
+            player.update_effects()
 
         for asteroid in asteroids:
             dist = asteroid.position.distance_to(player.position)
@@ -133,15 +134,19 @@ def main():
 
             if asteroid.collision_check(player):
                 player.player_lives -= 1
+                player.position.x = SCREEN_WIDTH / 2
+                player.position.y = SCREEN_HEIGHT / 2
+                lives = player.player_lives
                 if player.player_lives == 0:
                     game_over = True
+        
 
                 player_data = {
                     "near_misses": near_misses,
                     "shots_fired": shots_fired,
                     "shots_hit": shots_hit,
                     "player_alive": False,
-                    "collected_powerups": collected,
+                    "collected_powerups": len(player.active_effects),
                     "score": score
                 }
 
@@ -190,7 +195,7 @@ def main():
             small_font.render_to(screen, (10, SCREEN_HEIGHT - 30), explore_info, (180, 180, 220))
 
             hit_ratio = shots_hit / max(1, player.shots_fired_count) * 100
-            small_font.render_to(screen, (SCREEN_WIDTH - 200, 10), f"Hit Ratio: {hit_ratio:.1f}%", (200, 200, 200))
+            #small_font.render_to(screen, (SCREEN_WIDTH - 200, 10), f"Hit Ratio: {hit_ratio:.1f}%", (200, 200, 200))
             small_font.render_to(screen, (SCREEN_WIDTH - 200, 40), f"Games: {games_played}", (200, 200, 200))
             small_font.render_to(screen, (SCREEN_WIDTH - 200, 70), f"Best: {high_score}", (200, 200, 200))
 

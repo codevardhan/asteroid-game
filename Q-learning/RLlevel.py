@@ -21,7 +21,7 @@ class RLDifficultyManager:
             "spawn_rate": {"min": 0.2, "max": 1.5, "current": ASTEROID_SPAWN_RATE},
             "asteroid_speed_min": {"min": 40, "max": 200, "current": 40},
             "asteroid_speed_max": {"min": 100, "max": 350, "current": 100},
-            "asteroid_kinds": {"min": ASTEROID_KINDS, "max": 5, "current": ASTEROID_KINDS}
+            "asteroid_kinds": {"min": ASTEROID_KINDS, "max": 5, "current": ASTEROID_KINDS},
         }
 
         self.survival_time = []
@@ -121,6 +121,8 @@ class RLDifficultyManager:
         self.engagement_score += 0.05 * player_data.get("near_misses", 0)
         if player_data.get("shots_fired", 0) > 0:
             self.engagement_score += 0.02
+        if player_data.get("collected_powerups",0) > 0:
+            self.engagement_score += 0.05
         self.engagement_score += 0.03 * player_data.get("shots_hit", 0)
         self.engagement_score = max(0, min(1, self.engagement_score))
 

@@ -2,14 +2,36 @@ from circleshape import *
 from constants import ASTEROID_KINDS, ASTEROID_MAX_RADIUS, ASTEROID_MIN_RADIUS, ASTEROID_SPAWN_RATE
 import random
 import pygame
+import math
 
 class Asteroid(CircleShape):
     def __init__(self, x, y, radius):
         super().__init__(x,y,radius)
+        self.position = pygame.Vector2(x,y)
+        self.radius = radius
+        self.velocity = pygame.Vector2(0,0)
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, (255,255,255), self.position, self.radius, 2)
+        self.sides = random.randint(5,10)
+        self.points  = self.generate_polygons()
+
+        self.image = pygame.Surface((radius*2,radius*2),pygame.SRCALPHA)
+        self.rect = self.image.get_rect(center=self.position)
+        
+    def generate_polygons(self):
+        p = []
+        angle_step = 2 * math.pi / self.sides
+
+        for i in range(self.sides):
+            angle = i * angle_step
+            rand_off = random.uniform(0.8,1.2)
+            x = self.radius * rand_off * math.cos(angle)
+            y = self.radius * rand_off * math.sin(angle)
+            p.append((x+self.radius,y+self.radius))
+        return p
     
+    def draw(self, screen):
+        pygame.draw.polygon(screen,(255,255,255),[(p[0] + self.position.x - self.radius, p[1] + self.position.y - self.radius) for p in self.points],2)
+
     def update(self, dt):
         self.position += self.velocity * dt
 

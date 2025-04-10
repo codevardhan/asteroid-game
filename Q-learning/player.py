@@ -37,14 +37,15 @@ class Player(CircleShape):
         expired_powerups = []
         for powerup,expiration in self.active_effects:
             if current_time >= expiration:
+                print("removing powerup")
                 expired_powerups.append(powerup)
                 self.active_effects.remove((powerup,expiration))
                 
         for powerup in expired_powerups:
             if powerup == "speed_power_up":
-                self.player_powerups['speed_power_up']+=1
-                self.player_turn_speed += 100
-                self.player_speed += 50
+                self.player_powerups['speed_power_up']-=1
+                self.player_turn_speed -= 100
+                self.player_speed -= 50
             if powerup == "shot_power_up":
                 self.player_powerups['shot_power_up']-=1
                 self.player_shoot_speed -= 100

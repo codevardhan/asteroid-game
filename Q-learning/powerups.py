@@ -3,7 +3,7 @@ from circleshape import *
 NEON_GREEN = (57, 255, 20)
 NEON_PINK = (255,20,147)
 NEON_RED = (255, 30, 30)
-EFFECT_DURATION = 5000
+EFFECT_DURATION = 3000
 # add despawn timer, add effect timer
 class PowerUp(CircleShape):
     def __init__(self, x, y, radius,type,ttl=5000):
