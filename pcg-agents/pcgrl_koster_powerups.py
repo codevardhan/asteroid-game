@@ -78,7 +78,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
 
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
-        PowerUp.containers = (self.powerups,self.updatables,self.drawables)
+        PowerUp.containers = (self.powerups, self.updatables, self.drawables)
         AsteroidField.containers = self.updatables
         PowerUpManager.containers = self.updatables
 
@@ -146,7 +146,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
         Player.containers = (self.updatables, self.drawables)
         Shot.containers = (self.shots, self.updatables, self.drawables)
         Asteroid.containers = (self.asteroids, self.updatables, self.drawables)
-        PowerUp.containers = (self.powerups,self.updatables,self.drawables)
+        PowerUp.containers = (self.powerups, self.updatables, self.drawables)
 
         self.player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
 
@@ -270,9 +270,9 @@ class AsteroidsPCGEnvKoster(gym.Env):
         num_pup = len(self.powerups)
         if num_pup < 3:
             num_pup_bucket = 0
-        elif num_pup >=3 and num_pup < 5:
+        elif num_pup >= 3 and num_pup < 5:
             num_pup_bucket = 1
-        elif num_pup >=5:
+        elif num_pup >= 5:
             num_pup_bucket = 2
 
         # player lives bucket
@@ -290,7 +290,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
         elif self.near_miss_count < 15:
             near_miss_bucket = 1  # Medium risk
         else:
-            near_miss_bucket = 2 
+            near_miss_bucket = 2
 
         obs = np.array([num_asts, px, py, self.near_miss_count], dtype=np.float32)
         return obs

@@ -13,6 +13,7 @@ from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from shot import Shot
 from stable_baselines3 import PPO
+
 # from pcgrl_koster import AsteroidsPCGEnvKoster
 from pcgrl_koster_powerups import AsteroidsPCGEnvKoster
 
