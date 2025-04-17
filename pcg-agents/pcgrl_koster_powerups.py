@@ -53,7 +53,6 @@ class AsteroidsPCGEnvKoster(gym.Env):
         self.render_mode = render_mode
         self.max_steps = max_steps
         self.spawn_limit = spawn_limit
-        self.font = pygame.freetype.SysFont(None, 36)
         # "Near miss" threshold: if an asteroid passes within this distance of player
         # but does not collide, it counts as a near miss (challenge).
         self.near_miss_radius = near_miss_radius
@@ -61,14 +60,15 @@ class AsteroidsPCGEnvKoster(gym.Env):
         # We'll track variety in spawning. Keep last N actions.
         self.diversity_window = diversity_window
         self.last_spawns = []
+        pygame.init()
 
         if self.render_mode == "human":
-            pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         else:
             pygame.display.init()
             self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
+        self.font = pygame.freetype.SysFont(None, 36)
 
         self.updatables = pygame.sprite.Group()
         self.drawables = pygame.sprite.Group()
@@ -113,7 +113,15 @@ class AsteroidsPCGEnvKoster(gym.Env):
         #   - speed in [40..120], angle in [0..360)
         # Discrete radius, speed, angle.
 
-        self.action_space = spaces.Discrete(3)
+        self.action_space = spaces.MultiDiscrete(
+            [
+                self.spawn_limit + 1,  # 0..spawn_limit (count)
+                # radius discrete steps
+                1 + (ASTEROID_MAX_RADIUS - ASTEROID_MIN_RADIUS),
+                81,  # speed from 40..120 => step = 1 => range 81
+                36,  # angle from 0..350 => step = 10 => 36 possible
+            ]
+        )
 
         # Observation space: [num_asteroids, player_x, player_y, near_miss_count]
         low = np.array([0, 0, 0, 0], dtype=np.float32)
@@ -267,7 +275,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
         elif num_pup >=5:
             num_pup_bucket = 2
 
-        #player lives bucket
+        # player lives bucket
         p_lives = self.player.player_lives
         if p_lives == 1:
             p_lives_bucket = 0
@@ -276,7 +284,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
         else:
             p_lives_bucket = 2
 
-        #bucket for near miss count
+        # bucket for near miss count
         if self.near_miss_count < 5:
             near_miss_bucket = 0  # Low risk
         elif self.near_miss_count < 15:
@@ -294,7 +302,7 @@ class AsteroidsPCGEnvKoster(gym.Env):
                 self.close()
 
         # A* agent update
-        self.agent.update(dt, self.player, self.asteroids)
+        self.agent.update(dt, self.player, self.asteroids, self.powerups)
 
         # Update sprites
         for upd in self.updatables:

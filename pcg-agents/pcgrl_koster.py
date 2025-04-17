@@ -52,7 +52,6 @@ class AsteroidsPCGEnvKoster(gym.Env):
         self.render_mode = render_mode
         self.max_steps = max_steps
         self.spawn_limit = spawn_limit
-        self.font = pygame.freetype.SysFont(None, 36)
         # "Near miss" threshold: if an asteroid passes within this distance of player
         # but does not collide, it counts as a near miss (challenge).
         self.near_miss_radius = near_miss_radius
@@ -60,14 +59,15 @@ class AsteroidsPCGEnvKoster(gym.Env):
         # We'll track variety in spawning. Keep last N actions.
         self.diversity_window = diversity_window
         self.last_spawns = []
+        pygame.init()
 
         if self.render_mode == "human":
-            pygame.init()
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         else:
             pygame.display.init()
             self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
+        self.font = pygame.freetype.SysFont(None, 36)
 
         self.updatables = pygame.sprite.Group()
         self.drawables = pygame.sprite.Group()
