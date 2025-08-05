@@ -1,4 +1,8 @@
-pygame
-numpy
-stable-baselines3
-wandb
+pygame==2.6.1
+numpy==2.3.2
+
+gymnasium==1.2.0
+
+stable_baselines3==2.7.0
+wandb==0.21.0
+tensorboard==2.20.0
