@@ -1,4 +1,6 @@
+import numpy as np
 from circleshape import *
+from powerups import *
 from constants import ASTEROID_KINDS, ASTEROID_MAX_RADIUS, ASTEROID_MIN_RADIUS, ASTEROID_SPAWN_RATE
 import random
 import pygame
@@ -40,7 +42,7 @@ class Asteroid(CircleShape):
         self.kill()
         if self.radius <= ASTEROID_MIN_RADIUS:
             return
-        
+        gamma = 0.4
         #spawning asteroids
         random_degrees = random.uniform(20, 50)
         vector1 = pygame.math.Vector2.rotate(self.velocity, random_degrees)
@@ -50,7 +52,10 @@ class Asteroid(CircleShape):
         
         asteroid1 = Asteroid(self.position.x, self.position.y, new_radius)
         asteroid2 = Asteroid(self.position.x, self.position.y, new_radius)
-
+        # RL must decide when to let asteroids spawn powerups upon destruction
+        # random math as placeholder
+        random_degrees = random.uniform(20, 50)
+        # instead of creating asteroids here, extract out, and spawn in main gameplay loop
         asteroid1.velocity = vector1 * 1.5 
         asteroid2.velocity = vector2 * 1.5
 
@@ -60,3 +65,7 @@ class Asteroid(CircleShape):
         if self.position.distance_to(other.position) <= r1 + r2:
             return True
         return False
+    
+    def destroy(self, powerup_manager):
+        powerup_manager.spawn_from_asteroid(self)
+        self.kill()
