@@ -1,6 +1,6 @@
 import sys
 
-sys.path.insert(0, "asteroid-random")
+sys.path.insert(0, "game/modified")
 
 from player import Player
 from shot import Shot
@@ -46,7 +46,7 @@ class AStarAgent:
         self.shoot_distance = shoot_distance
         self.shoot_angle_thresh = shoot_angle_thresh
 
-    def update(self, dt, player, asteroids, powerups):
+    def update(self, dt, player, asteroids, powerups=None):
         """
         AI update step.
         1) Possibly replan path with A*

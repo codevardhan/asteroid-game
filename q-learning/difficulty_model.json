@@ -1,0 +1,407 @@
+{
+    "low_very_easy_low": {
+        "increase_spawn_rate": 0.13153528685747115,
+        "decrease_spawn_rate": 0.13153528685747115,
+        "increase_speed": 0.13153528685747115,
+        "decrease_speed": 0.13153528685747115,
+        "increase_kinds": 0.13153528685747115,
+        "decrease_kinds": 0.13153528685747115,
+        "no_change": 0.13153528685747115
+    },
+    "low_very_easy_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_very_easy_high": {
+        "increase_spawn_rate": 2.0960762300591997,
+        "decrease_spawn_rate": 2.0960762300591997,
+        "increase_speed": 2.0960762300591997,
+        "decrease_speed": 2.0960762300591997,
+        "increase_kinds": 2.0960762300591997,
+        "decrease_kinds": 2.0960762300591997,
+        "no_change": 2.0960762300591997
+    },
+    "low_easy_low": {
+        "increase_spawn_rate": 1.1962419765259,
+        "decrease_spawn_rate": 1.1962419765259,
+        "increase_speed": 1.1962419765259,
+        "decrease_speed": 1.1962419765259,
+        "increase_kinds": 1.1962419765259,
+        "decrease_kinds": 1.1962419765259,
+        "no_change": 1.1962419765259
+    },
+    "low_easy_medium": {
+        "increase_spawn_rate": 0.32996736497083723,
+        "decrease_spawn_rate": 0.32996736497083723,
+        "increase_speed": 0.32996736497083723,
+        "decrease_speed": 0.32996736497083723,
+        "increase_kinds": 0.32996736497083723,
+        "decrease_kinds": 0.32996736497083723,
+        "no_change": 0.32996736497083723
+    },
+    "low_easy_high": {
+        "increase_spawn_rate": 4.53720626849688,
+        "decrease_spawn_rate": 4.53720626849688,
+        "increase_speed": 4.53720626849688,
+        "decrease_speed": 4.53720626849688,
+        "increase_kinds": 4.53720626849688,
+        "decrease_kinds": 4.53720626849688,
+        "no_change": 4.53720626849688
+    },
+    "low_medium_low": {
+        "increase_spawn_rate": 0.03937639888384001,
+        "decrease_spawn_rate": 0.03937639888384001,
+        "increase_speed": 0.03937639888384001,
+        "decrease_speed": 0.03937639888384001,
+        "increase_kinds": 0.03937639888384001,
+        "decrease_kinds": 0.03937639888384001,
+        "no_change": 0.03937639888384001
+    },
+    "low_medium_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_medium_high": {
+        "increase_spawn_rate": 2.417371332509613,
+        "decrease_spawn_rate": 2.417371332509613,
+        "increase_speed": 2.417371332509613,
+        "decrease_speed": 2.417371332509613,
+        "increase_kinds": 2.417371332509613,
+        "decrease_kinds": 2.417371332509613,
+        "no_change": 2.417371332509613
+    },
+    "low_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_very_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_very_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "low_very_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_easy_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_easy_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_easy_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_easy_low": {
+        "increase_spawn_rate": 0.2576258816709565,
+        "decrease_spawn_rate": 0.2576258816709565,
+        "increase_speed": 0.2576258816709565,
+        "decrease_speed": 0.2576258816709565,
+        "increase_kinds": 0.2576258816709565,
+        "decrease_kinds": 0.2576258816709565,
+        "no_change": 0.2576258816709565
+    },
+    "medium_easy_medium": {
+        "increase_spawn_rate": 0.05865737563961278,
+        "decrease_spawn_rate": 0.05865737563961278,
+        "increase_speed": 0.05865737563961278,
+        "decrease_speed": 0.05865737563961278,
+        "increase_kinds": 0.05865737563961278,
+        "decrease_kinds": 0.05865737563961278,
+        "no_change": 0.05865737563961278
+    },
+    "medium_easy_high": {
+        "increase_spawn_rate": 0.44579817717063164,
+        "decrease_spawn_rate": 0.44579817717063164,
+        "increase_speed": 0.44579817717063164,
+        "decrease_speed": 0.44579817717063164,
+        "increase_kinds": 0.44579817717063164,
+        "decrease_kinds": 0.44579817717063164,
+        "no_change": 0.44579817717063164
+    },
+    "medium_medium_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_medium_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_medium_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "medium_very_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_easy_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_easy_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_easy_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_easy_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_easy_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_easy_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_medium_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_medium_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_medium_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_hard_low": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_hard_medium": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    },
+    "high_very_hard_high": {
+        "increase_spawn_rate": 0,
+        "decrease_spawn_rate": 0,
+        "increase_speed": 0,
+        "decrease_speed": 0,
+        "increase_kinds": 0,
+        "decrease_kinds": 0,
+        "no_change": 0
+    }
+}

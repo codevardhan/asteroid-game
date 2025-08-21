@@ -9,6 +9,7 @@ from powerups import PowerUp
 from RLlevel import RLDifficultyManager
 from powerup_manager import PowerUpManager
 
+
 def main():
     pygame.init()
     clock = pygame.time.Clock()
@@ -28,7 +29,7 @@ def main():
     Shot.containers = (shots, updatables, drawables)
     AsteroidField.containers = updatables
     Player.containers = (updatables, drawables)
-    PowerUp.containers = (powerups,updatables,drawables)
+    PowerUp.containers = (powerups, updatables, drawables)
 
     # Difficulty manager
     difficulty_manager = RLDifficultyManager()
@@ -40,7 +41,7 @@ def main():
         print("Starting with a new model.")
     PowerUpManager.containers = updatables
     asteroid_field = AsteroidField(difficulty_manager)
-    powerup_m  =  PowerUpManager(difficulty_manager)
+    powerup_m = PowerUpManager(difficulty_manager)
     updatables.add(asteroid_field)
 
     # Game state
@@ -50,7 +51,7 @@ def main():
     game_over = False
     score = 0
     dt = 0
-    lives  = 1
+    lives = 1
     # RL metrics
     shots_fired = 0
     shots_hit = 0
@@ -66,9 +67,15 @@ def main():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                difficulty_manager.save_model("difficulty_model.json")
-                difficulty_manager.save_training_log("training_log.csv")
-                difficulty_manager.plot_training_progress("training_plot.png")
+                difficulty_manager.save_model(
+                    "../outputs/q-learning/difficulty_model.json"
+                )
+                difficulty_manager.save_training_log(
+                    "../outputs/q-learning/training_log.csv"
+                )
+                difficulty_manager.plot_training_progress(
+                    "../outputs/q-learning/training_plot.png"
+                )
                 return
 
             elif event.type == pygame.KEYDOWN:
@@ -88,7 +95,7 @@ def main():
 
                     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
                     player.shots_fired_count = 0
-                    lives  = player.player_lives
+                    lives = player.player_lives
                     asteroid_field = AsteroidField(difficulty_manager)
                     powerup_m = PowerUpManager(difficulty_manager)
                     updatables.add(asteroid_field)
@@ -104,14 +111,14 @@ def main():
 
         if not game_over:
             dt = clock.tick(60) / 1000.0
-            #print(len(player.active_effects))
+            # print(len(player.active_effects))
             player_data = {
                 "near_misses": near_misses,
                 "shots_fired": shots_fired,
                 "shots_hit": shots_hit,
                 "player_alive": True,
-                "collected_powerups":len(player.active_effects),
-                "score": score
+                "collected_powerups": len(player.active_effects),
+                "score": score,
             }
 
             shots_fired = 0
@@ -139,7 +146,6 @@ def main():
                 lives = player.player_lives
                 if player.player_lives == 0:
                     game_over = True
-        
 
                 player_data = {
                     "near_misses": near_misses,
@@ -147,7 +153,7 @@ def main():
                     "shots_hit": shots_hit,
                     "player_alive": False,
                     "collected_powerups": len(player.active_effects),
-                    "score": score
+                    "score": score,
                 }
 
                 difficulty_manager.update(dt, player_data)
@@ -170,7 +176,6 @@ def main():
                     collected += 1
                     powerup.remove()
 
-
         # Draw UI
         font.render_to(screen, (10, 10), f"Score: {score}", (255, 255, 255))
 
@@ -189,29 +194,62 @@ def main():
             small_font.render_to(screen, (220, 55), f"Engagement", (200, 200, 200))
 
             difficulty_info = f"Spawn Rate: {difficulty_manager.get_spawn_rate():.2f}s | Speed: {difficulty_manager.get_speed_range()[0]:.0f}-{difficulty_manager.get_speed_range()[1]:.0f}"
-            small_font.render_to(screen, (10, SCREEN_HEIGHT - 60), difficulty_info, (200, 200, 200))
-            font.render_to(screen, (180,10),f"Lives: {player.player_lives}",(255,255,255))
-            explore_info = f"AI Learning: {difficulty_manager.get_exploration_rate():.2f}"
-            small_font.render_to(screen, (10, SCREEN_HEIGHT - 30), explore_info, (180, 180, 220))
+            small_font.render_to(
+                screen, (10, SCREEN_HEIGHT - 60), difficulty_info, (200, 200, 200)
+            )
+            font.render_to(
+                screen, (180, 10), f"Lives: {player.player_lives}", (255, 255, 255)
+            )
+            explore_info = (
+                f"AI Learning: {difficulty_manager.get_exploration_rate():.2f}"
+            )
+            small_font.render_to(
+                screen, (10, SCREEN_HEIGHT - 30), explore_info, (180, 180, 220)
+            )
 
             hit_ratio = shots_hit / max(1, player.shots_fired_count) * 100
-            #small_font.render_to(screen, (SCREEN_WIDTH - 200, 10), f"Hit Ratio: {hit_ratio:.1f}%", (200, 200, 200))
-            small_font.render_to(screen, (SCREEN_WIDTH - 200, 40), f"Games: {games_played}", (200, 200, 200))
-            small_font.render_to(screen, (SCREEN_WIDTH - 200, 70), f"Best: {high_score}", (200, 200, 200))
+            # small_font.render_to(screen, (SCREEN_WIDTH - 200, 10), f"Hit Ratio: {hit_ratio:.1f}%", (200, 200, 200))
+            small_font.render_to(
+                screen,
+                (SCREEN_WIDTH - 200, 40),
+                f"Games: {games_played}",
+                (200, 200, 200),
+            )
+            small_font.render_to(
+                screen, (SCREEN_WIDTH - 200, 70), f"Best: {high_score}", (200, 200, 200)
+            )
 
         if difficulty_timer > 0:
             text_surface, rect = font.render(difficulty_message, (255, 255, 0))
             screen.blit(text_surface, (SCREEN_WIDTH // 2 - rect.width // 2, 100))
 
         if game_over:
-            font.render_to(screen, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2), "GAME OVER", (255, 255, 255))
-            font.render_to(screen, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 50), "Press R to restart", (255, 255, 255))
+            font.render_to(
+                screen,
+                (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2),
+                "GAME OVER",
+                (255, 255, 255),
+            )
+            font.render_to(
+                screen,
+                (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 50),
+                "Press R to restart",
+                (255, 255, 255),
+            )
 
-            small_font.render_to(screen, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 100),
-                                 f"Engagement: {difficulty_manager.get_engagement_score():.2f}", (200, 200, 200))
+            small_font.render_to(
+                screen,
+                (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 100),
+                f"Engagement: {difficulty_manager.get_engagement_score():.2f}",
+                (200, 200, 200),
+            )
 
-            small_font.render_to(screen, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 130),
-                                 f"Survival Time: {difficulty_manager.episode_length:.1f}s", (200, 200, 200))
+            small_font.render_to(
+                screen,
+                (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 + 130),
+                f"Survival Time: {difficulty_manager.episode_length:.1f}s",
+                (200, 200, 200),
+            )
 
             player.kill()
 

@@ -1,7 +1,7 @@
 import sys
 
-sys.path.insert(0, "asteroid-random")
-sys.path.insert(0, "agents")
+sys.path.insert(0, "../game/modified")
+# sys.path.insert(0, "agents")
 
 from a_star import AStarAgent
 from constants import *
@@ -409,3 +409,19 @@ class AsteroidsPCGEnvKoster(gym.Env):
         reward -= 0.01
 
         return reward
+
+if __name__ == "__main__":
+    env = AsteroidsPCGEnvKoster(render_mode="human")  # Create the environment
+
+    obs, _ = env.reset()  # Reset the environment to get the initial state
+    done = False
+
+    while not done:
+        action = env.action_space.sample()  # Sample a random action
+        obs, reward, terminated, truncated, info = env.step(action)
+        env.render(info)  # Render the environment
+
+        if terminated or truncated:
+            done = True
+
+    env.close()

@@ -217,7 +217,7 @@ class RLDifficultyManager:
         except FileNotFoundError:
             print(f"Model file {filename} not found. Starting with a new model.")
 
-    def save_training_log(self, filename="training_log.csv"):
+    def save_training_log(self, filename="../outputs/q-learning/training_log.csv"):
         keys = ["episode", "survival_time", "engagement", "score", "exploration_rate"]
         with open(filename, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=keys)

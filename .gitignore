@@ -5,3 +5,4 @@ outputs
 wandb
 .vscode
 tb
+asteroid_game.egg-info

@@ -1,19 +1,26 @@
 import sys
 import threading
 import time
-
-sys.path.insert(0, "game/original")
-sys.path.insert(0, "pcg-agents/")
-
+from pathlib import Path
 import pygame
 import pygame.freetype
+
+ROOT = Path(__file__).resolve().parent.parent
+GAME_PATH = ROOT / "game" / "modified"
+
+sys.path.insert(0, str(GAME_PATH))
+
+
 from constants import *
 from player import Player
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from shot import Shot
 from stable_baselines3 import PPO
-from pcgrl_koster import AsteroidsPCGEnvKoster
+
+from pcgrl_koster_powerups import AsteroidsPCGEnvKoster
+
+MODEL_DIR = ROOT / "models" / "ppo"
 
 # Shared variables and synchronization primitives
 current_obs = None
@@ -47,7 +54,7 @@ def main():
     env = AsteroidsPCGEnvKoster(render_mode="human", max_steps=600, spawn_limit=3)
     obs, info = env.reset()
 
-    model = PPO.load("outputs/asteroids_pcg_model", device="cpu")
+    model = PPO.load(MODEL_DIR / "asteroids_pcg_model", device="cpu")
 
     env.agent.update = lambda dt, player, asteroids: None
 
@@ -79,7 +86,7 @@ def main():
 
     stop_prediction = True
     pred_thread.join()
-    
+
     env.game_over_state()
     pygame.quit()
     sys.exit()
